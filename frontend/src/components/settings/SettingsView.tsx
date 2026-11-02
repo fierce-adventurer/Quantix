@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Palette,
   Layers,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { useTheme, Theme } from '../../context/theme-context';
@@ -23,7 +24,7 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsUpdated }) => {
-  const { tenant, user } = useAuth();
+  const { tenant, user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const isLight = theme === 'light';
 
@@ -386,6 +387,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onSettingsUpdated })
           </GlowButton>
         </div>
       </form>
+
+      <div
+        className={`rounded-2xl border p-6 backdrop-blur-xl transition-all ${
+          isLight
+            ? 'bg-white border-zinc-200 shadow-sm'
+            : 'bg-[#0f0f15]/80 border-white/5 shadow-xl'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`text-base font-bold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                Session & Security
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Encrypted Session
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 mt-1">
+              Signed in as <strong className={isLight ? 'text-zinc-800' : 'text-zinc-200'}>{user?.email}</strong> with role <span className="text-orange-400 uppercase font-mono">{user?.role}</span>.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all duration-200 shadow-sm shadow-rose-500/10"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out of Store Session</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

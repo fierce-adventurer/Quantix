@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 interface PillBadgeProps {
@@ -9,7 +10,10 @@ interface PillBadgeProps {
 
 export const PillBadge: React.FC<PillBadgeProps> = ({ tag = 'NEW', text, className }) => {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
       className={cn(
         'inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#181514] border border-[#ff6b00]/30 shadow-glow-sm',
         className
@@ -19,6 +23,6 @@ export const PillBadge: React.FC<PillBadgeProps> = ({ tag = 'NEW', text, classNa
         {tag}
       </span>
       <span className="text-xs font-medium text-orange-200/90">{text}</span>
-    </div>
+    </motion.div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { GlowButton } from '../ui/GlowButton';
@@ -47,10 +48,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
 
   return (
     <div className="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-4 py-12">
-      <div className="glow-horizon" />
-      <div className="sunburst-crest" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+        className="glow-horizon"
+      />
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 0.85, y: 0 }}
+        transition={{ duration: 1, delay: 0.2 }}
+        className="sunburst-crest"
+      />
 
-      <div className="relative z-10 w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-md"
+      >
         <div className="text-center mb-8">
           <PillBadge text="Store-Independent Multi-Tenant Architecture" className="mb-4" />
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
@@ -61,15 +77,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
           </p>
         </div>
 
-        <div className="glass-panel-glow rounded-2xl p-7 sm:p-8 relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="glass-panel-glow rounded-2xl p-7 sm:p-8 relative overflow-hidden"
+        >
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          {error && (
-            <div className="mb-6 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2 overflow-hidden"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <GlassInput
@@ -136,8 +164,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
               Need a new store? <span className="text-orange-400 font-semibold">Sign Up</span>
             </button>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };

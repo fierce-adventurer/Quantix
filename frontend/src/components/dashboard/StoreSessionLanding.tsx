@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { Store, User, Shield, LogOut, CheckCircle2, Activity, Database, Layers } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { GlowButton } from '../ui/GlowButton';
@@ -33,12 +34,41 @@ export const StoreSessionLanding: React.FC = () => {
     fetchHealth();
   }, []);
 
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: 'easeOut' },
+    },
+  };
+
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] relative flex flex-col">
-      <div className="glow-horizon" />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="glow-horizon"
+      />
       <div className="sunburst-crest" />
 
-      <nav className="relative z-20 w-full border-b border-white/10 bg-[#0d0d12]/80 backdrop-blur-md px-6 py-4">
+      <motion.nav
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-20 w-full border-b border-white/10 bg-[#0d0d12]/80 backdrop-blur-md px-6 py-4"
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b00] to-[#ffa500] p-0.5 shadow-glow-sm flex items-center justify-center">
@@ -78,10 +108,15 @@ export const StoreSessionLanding: React.FC = () => {
             </GlowButton>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-6 py-10 space-y-8">
-        <div>
+      <motion.main
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-6 py-10 space-y-8"
+      >
+        <motion.div variants={itemVariants}>
           <PillBadge text="Feature 1 Verified • Basic Auth & Tenant Isolation" className="mb-3" />
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
             Welcome Back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b00] to-[#ffa500]">{tenant?.name} Admin</span>
@@ -89,10 +124,10 @@ export const StoreSessionLanding: React.FC = () => {
           <p className="text-zinc-400 text-sm max-w-2xl">
             You are securely authenticated into your dedicated store tenant. All queries and inventory modifications are partitioned strictly under your unique tenant context.
           </p>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-panel-glow rounded-2xl p-6 space-y-4">
+          <motion.div variants={itemVariants} className="glass-panel-glow rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-orange-400">
                 Store Metadata
@@ -117,9 +152,9 @@ export const StoreSessionLanding: React.FC = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="glass-panel rounded-2xl p-6 space-y-4">
+          <motion.div variants={itemVariants} className="glass-panel rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 Admin Identity
@@ -142,9 +177,9 @@ export const StoreSessionLanding: React.FC = () => {
                 <span className="text-orange-400 font-semibold">JWT Bearer Token</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="glass-panel rounded-2xl p-6 space-y-4">
+          <motion.div variants={itemVariants} className="glass-panel rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 Database Engine
@@ -172,10 +207,10 @@ export const StoreSessionLanding: React.FC = () => {
                 <span className="text-emerald-400">Preserved on Idle</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="glass-panel rounded-2xl p-6 sm:p-8">
+        <motion.div variants={itemVariants} className="glass-panel rounded-2xl p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-4">
             <Activity className="w-5 h-5 text-orange-400" />
             <h2 className="text-lg font-bold text-white">Next Feature Pipeline</h2>
@@ -209,8 +244,8 @@ export const StoreSessionLanding: React.FC = () => {
               </p>
             </div>
           </div>
-        </div>
-      </main>
+        </motion.div>
+      </motion.main>
     </div>
   );
 };

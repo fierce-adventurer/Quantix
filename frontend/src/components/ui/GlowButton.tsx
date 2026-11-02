@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
 interface GlowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -24,23 +25,26 @@ export const GlowButton: React.FC<GlowButtonProps> = ({
 
   const variantStyles = {
     primary:
-      'bg-gradient-to-r from-[#ff6b00] via-[#ff7800] to-[#ffa500] text-white shadow-glow-button hover:brightness-110 active:scale-[0.98] border border-orange-400/30',
+      'bg-gradient-to-r from-[#ff6b00] via-[#ff7800] to-[#ffa500] text-white shadow-glow-button border border-orange-400/30',
     secondary:
-      'bg-[#181822] text-[#f4f4f5] hover:bg-[#20202c] border border-white/10 hover:border-orange-500/40 active:scale-[0.98]',
+      'bg-[#181822] text-[#f4f4f5] hover:bg-[#20202c] border border-white/10 hover:border-orange-500/40',
     ghost:
-      'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5 active:scale-[0.98]',
+      'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
   };
 
   return (
-    <button
+    <motion.button
+      whileHover={!disabled && !isLoading ? { scale: 1.02, filter: 'brightness(1.08)' } : {}}
+      whileTap={!disabled && !isLoading ? { scale: 0.98 } : {}}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={cn(
-        'relative inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 select-none disabled:opacity-50 disabled:pointer-events-none',
+        'relative inline-flex items-center justify-center font-medium rounded-xl transition-colors select-none disabled:opacity-50 disabled:pointer-events-none',
         sizeStyles[size],
         variantStyles[variant],
         className
       )}
       disabled={disabled || isLoading}
-      {...props}
+      {...(props as any)}
     >
       {isLoading ? (
         <span className="inline-flex items-center gap-2">
@@ -69,6 +73,6 @@ export const GlowButton: React.FC<GlowButtonProps> = ({
       ) : (
         children
       )}
-    </button>
+    </motion.button>
   );
 };

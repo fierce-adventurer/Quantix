@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
+import { requestLocationPermissionAndDetectCurrency } from '../../types/product';
 import { GlowButton } from '../ui/GlowButton';
 import { GlassInput } from '../ui/GlassInput';
 import { PillBadge } from '../ui/PillBadge';
@@ -34,6 +35,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
 
     setIsSubmitting(true);
     try {
+      await requestLocationPermissionAndDetectCurrency();
       await login(email, password);
     } catch (err: unknown) {
       if (err instanceof Error) {

@@ -59,16 +59,6 @@ export const CURRENCY_OPTIONS: CurrencyOption[] = [
   { code: 'CHF', symbol: 'CHF', label: 'CHF - Switzerland (CHF)', country: 'Switzerland' },
 ];
 
-export const LOCATION_TYPE_OPTIONS: string[] = [
-  'Retail Storefront',
-  'Main Warehouse',
-  'Backroom Storage',
-  'Aisle / Shelf Bay',
-  'Fulfillment Hub',
-  'Cold Storage',
-  'Online Reserve',
-];
-
 export const getCurrencySymbol = (code?: string): string => {
   if (!code) return '$';
   const found = CURRENCY_OPTIONS.find((c) => c.code.toUpperCase() === code.toUpperCase());
@@ -104,4 +94,71 @@ export const detectLocationCurrency = (): { currency: string; country: string } 
     }
   } catch {}
   return { currency: 'USD', country: 'United States' };
+};
+
+export const detectCurrencyFromCoordinates = (lat: number, lon: number): { currency: string; country: string } => {
+  if (lat >= 6 && lat <= 38 && lon >= 68 && lon <= 98) {
+    return { currency: 'INR', country: 'India' };
+  }
+  if (lat >= 49 && lat <= 61 && lon >= -8 && lon <= 2) {
+    return { currency: 'GBP', country: 'United Kingdom' };
+  }
+  if (lat >= 24 && lat <= 46 && lon >= 122 && lon <= 154) {
+    return { currency: 'JPY', country: 'Japan' };
+  }
+  if (lat >= -44 && lat <= -10 && lon >= 113 && lon <= 154) {
+    return { currency: 'AUD', country: 'Australia' };
+  }
+  if (lat >= 42 && lat <= 83 && lon >= -141 && lon <= -52) {
+    return { currency: 'CAD', country: 'Canada' };
+  }
+  if (lat >= 22 && lat <= 27 && lon >= 51 && lon <= 57) {
+    return { currency: 'AED', country: 'United Arab Emirates' };
+  }
+  if (lat >= 1.1 && lat <= 1.5 && lon >= 103.6 && lon <= 104.1) {
+    return { currency: 'SGD', country: 'Singapore' };
+  }
+  if (lat >= 45.8 && lat <= 47.8 && lon >= 5.9 && lon <= 10.5) {
+    return { currency: 'CHF', country: 'Switzerland' };
+  }
+  if (lat >= 35 && lat <= 71 && lon >= -10 && lon <= 35) {
+    return { currency: 'EUR', country: 'European Union' };
+  }
+  if (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66) {
+    return { currency: 'USD', country: 'United States' };
+  }
+  return detectLocationCurrency();
+};
+
+export const requestLocationPermissionAndDetectCurrency = (): Promise<{ currency: string; country: string; granted: boolean }> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      const fallback = detectLocationCurrency();
+      localStorage.setItem('quantix_store_currency', fallback.currency);
+      localStorage.setItem('quantix_user_country', fallback.country);
+      resolve({ ...fallback, granted: false });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const detected = detectCurrencyFromCoordinates(pos.coords.latitude, pos.coords.longitude);
+        localStorage.setItem('quantix_store_currency', detected.currency);
+        localStorage.setItem('quantix_user_country', detected.country);
+        resolve({ ...detected, granted: true });
+      },
+      () => {
+        const fallback = detectLocationCurrency();
+        localStorage.setItem('quantix_store_currency', fallback.currency);
+        localStorage.setItem('quantix_user_country', fallback.country);
+        resolve({ ...fallback, granted: false });
+      },
+      { timeout: 6000, enableHighAccuracy: false }
+    );
+  });
+};
+
+export const getStoredStoreCurrency = (): string => {
+  if (typeof window === 'undefined') return 'USD';
+  return localStorage.getItem('quantix_store_currency') || 'USD';
 };

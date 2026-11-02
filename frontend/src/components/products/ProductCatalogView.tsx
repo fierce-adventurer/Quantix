@@ -12,8 +12,6 @@ import {
   Coins,
   RefreshCw,
   X,
-  MapPin,
-  Globe,
   ChevronRight,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -22,8 +20,7 @@ import {
   Product,
   CreateProductInput,
   getCurrencySymbol,
-  detectLocationCurrency,
-  CURRENCY_OPTIONS,
+  getStoredStoreCurrency,
 } from '../../types/product';
 import { api } from '../../lib/api';
 import { GlowButton } from '../ui/GlowButton';
@@ -37,7 +34,7 @@ export const ProductCatalogView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTab, setFilterTab] = useState<'all' | 'in-stock' | 'low-stock' | 'out-of-stock'>('all');
-  const [storeCurrency, setStoreCurrency] = useState(() => detectLocationCurrency().currency);
+  const storeCurrency = getStoredStoreCurrency();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -111,7 +108,6 @@ export const ProductCatalogView: React.FC = () => {
         !query ||
         product.name.toLowerCase().includes(query) ||
         product.sku.toLowerCase().includes(query) ||
-        (product.locationType && product.locationType.toLowerCase().includes(query)) ||
         (product.currency && product.currency.toLowerCase().includes(query));
 
       if (!matchesSearch) return false;
@@ -172,22 +168,6 @@ export const ProductCatalogView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#14141c] border border-white/10 text-xs">
-              <Globe className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-zinc-400">Currency:</span>
-              <select
-                value={storeCurrency}
-                onChange={(e) => setStoreCurrency(e.target.value)}
-                className="bg-transparent text-white font-semibold outline-none cursor-pointer"
-              >
-                {CURRENCY_OPTIONS.map((c) => (
-                  <option key={c.code} value={c.code} className="bg-[#14141c] text-white">
-                    {c.code} ({c.symbol})
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#14141c] border border-white/10 text-xs">
               <Store className="w-3.5 h-3.5 text-orange-400" />
               <span className="text-zinc-400">Store:</span>
@@ -217,7 +197,7 @@ export const ProductCatalogView: React.FC = () => {
               Inventory & Products
             </h1>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Store-partitioned catalog control center. Manage SKUs, stock levels, locations, and pricing.
+              Store-partitioned catalog control center. Manage SKUs, stock levels, thresholds, and pricing.
             </p>
           </div>
 
@@ -365,7 +345,6 @@ export const ProductCatalogView: React.FC = () => {
               <thead className="bg-[#121217] text-zinc-400 text-[11px] uppercase tracking-wider border-b border-white/5 font-semibold">
                 <tr>
                   <th className="py-3.5 px-4 sm:px-6">Product & SKU</th>
-                  <th className="py-3.5 px-4">Location</th>
                   <th className="py-3.5 px-4">Stock on Hand</th>
                   <th className="py-3.5 px-4">Threshold</th>
                   <th className="py-3.5 px-4">Cost Price</th>
@@ -376,14 +355,14 @@ export const ProductCatalogView: React.FC = () => {
               <tbody className="divide-y divide-white/5">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-zinc-400">
+                    <td colSpan={6} className="py-12 text-center text-zinc-400">
                       <RefreshCw className="w-6 h-6 animate-spin text-orange-400 mx-auto mb-2" />
                       Loading inventory records...
                     </td>
                   </tr>
                 ) : filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-zinc-400">
+                    <td colSpan={6} className="py-12 text-center text-zinc-400">
                       <div className="w-12 h-12 rounded-2xl bg-[#14141c] border border-white/10 flex items-center justify-center mx-auto mb-3 text-zinc-500">
                         <Package className="w-6 h-6" />
                       </div>
@@ -392,7 +371,7 @@ export const ProductCatalogView: React.FC = () => {
                       </div>
                       <p className="text-xs text-zinc-500 max-w-sm mx-auto mb-4">
                         {searchQuery
-                          ? `No items match the filter "${searchQuery}". Clear search or try a different SKU or location.`
+                          ? `No items match the filter "${searchQuery}". Clear search or try a different SKU.`
                           : 'Begin by adding your first product to this store workspace.'}
                       </p>
                       {!searchQuery && (
@@ -440,17 +419,6 @@ export const ProductCatalogView: React.FC = () => {
                               </span>
                             )}
                           </div>
-                        </td>
-
-                        <td className="py-3.5 px-4">
-                          {product.locationType ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#181824] border border-white/10 text-[11px] text-zinc-300">
-                              <MapPin className="w-3 h-3 text-orange-400 shrink-0" />
-                              <span className="truncate max-w-[130px]">{product.locationType}</span>
-                            </span>
-                          ) : (
-                            <span className="text-zinc-600 text-xs">—</span>
-                          )}
                         </td>
 
                         <td className="py-3.5 px-4">

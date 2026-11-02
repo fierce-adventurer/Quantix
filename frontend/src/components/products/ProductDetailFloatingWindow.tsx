@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Tag,
-  MapPin,
   Layers,
   Edit2,
   Trash2,
@@ -92,7 +91,6 @@ export const ProductDetailFloatingWindow: React.FC<ProductDetailFloatingWindowPr
       sellingPrice: product.sellingPrice,
       lowStockThreshold: product.lowStockThreshold,
       currency: product.currency,
-      locationType: product.locationType,
     };
 
     try {
@@ -150,13 +148,6 @@ export const ProductDetailFloatingWindow: React.FC<ProductDetailFloatingWindowPr
                     <Tag className="w-3 h-3" />
                     <span>{product.sku}</span>
                   </span>
-
-                  {product.locationType && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#181824] border border-white/10 text-xs text-zinc-300">
-                      <MapPin className="w-3 h-3 text-orange-400" />
-                      <span>{product.locationType}</span>
-                    </span>
-                  )}
 
                   <span className="text-xs px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 text-zinc-400 font-mono">
                     {product.currency || 'USD'} ({symbol})

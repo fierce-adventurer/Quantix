@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Store, Mail, Lock, ArrowRight, ShieldCheck, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
+import { requestLocationPermissionAndDetectCurrency } from '../../types/product';
 import { GlowButton } from '../ui/GlowButton';
 import { GlassInput } from '../ui/GlassInput';
 import { PillBadge } from '../ui/PillBadge';
@@ -51,6 +52,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
 
     setIsSubmitting(true);
     try {
+      await requestLocationPermissionAndDetectCurrency();
       await signup(organizationName.trim(), email.trim(), password);
     } catch (err: unknown) {
       if (err instanceof Error) {

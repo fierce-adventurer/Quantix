@@ -26,6 +26,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
       return;
     }
 
+    const isEmailValid = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}$/.test(email);
+    if (!isEmailValid) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await login(email, password);

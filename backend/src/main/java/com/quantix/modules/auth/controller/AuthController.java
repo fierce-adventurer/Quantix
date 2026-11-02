@@ -5,6 +5,7 @@ import com.quantix.modules.auth.dto.LoginRequest;
 import com.quantix.modules.auth.dto.SignupRequest;
 import com.quantix.modules.auth.service.AuthService;
 import com.quantix.shared.dto.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +34,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        String clientIp = extractClientIp(servletRequest);
+        AuthResponse response = authService.login(request, clientIp);
         return ResponseEntity.ok(ApiResponse.ok(response, "Login successful"));
     }
 
@@ -43,5 +48,17 @@ public class AuthController {
         String userId = authentication.getName();
         AuthResponse response = authService.getCurrentUser(userId);
         return ResponseEntity.ok(ApiResponse.ok(response, "Session details retrieved"));
+    }
+
+    private String extractClientIp(HttpServletRequest request) {
+        String xf = request.getHeader("X-Forwarded-For");
+        if (xf != null && !xf.isBlank()) {
+            return xf.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

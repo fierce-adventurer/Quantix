@@ -37,19 +37,18 @@ class AuthIntegrationTest {
 
     @Test
     void testSignupLoginAndMeFlow() throws Exception {
-        SignupRequest signup = new SignupRequest("Apex Store", "owner@apexstore.com", "secret123");
+        SignupRequest signup = new SignupRequest("Apex Store", "owner@apexstore.com", "Secret123!");
 
-        MvcResult signupResult = mockMvc.perform(post("/api/auth/signup")
+        mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signup)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").isString())
                 .andExpect(jsonPath("$.data.tenant.name").value("Apex Store"))
-                .andExpect(jsonPath("$.data.user.email").value("owner@apexstore.com"))
-                .andReturn();
+                .andExpect(jsonPath("$.data.user.email").value("owner@apexstore.com"));
 
-        LoginRequest login = new LoginRequest("owner@apexstore.com", "secret123");
+        LoginRequest login = new LoginRequest("owner@apexstore.com", "Secret123!");
 
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,18 +71,28 @@ class AuthIntegrationTest {
     }
 
     @Test
-    void testInvalidPasswordFails() throws Exception {
-        SignupRequest signup = new SignupRequest("Nova Boutique", "nova@boutique.com", "secret123");
+    void testCircuitBreakerTripsAfterMaxFailures() throws Exception {
+        SignupRequest signup = new SignupRequest("Brute Force Store", "target@store.com", "Secret123!");
         mockMvc.perform(post("/api/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signup)))
                 .andExpect(status().isCreated());
 
-        LoginRequest wrongLogin = new LoginRequest("nova@boutique.com", "wrongpassword");
+        LoginRequest badLogin = new LoginRequest("target@store.com", "WrongPassword1!");
+
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login")
+                            .header("X-Forwarded-For", "192.168.1.100")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(badLogin)))
+                    .andExpect(status().isUnauthorized());
+        }
+
         mockMvc.perform(post("/api/auth/login")
+                        .header("X-Forwarded-For", "192.168.1.100")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(wrongLogin)))
-                .andExpect(status().isUnauthorized())
+                        .content(objectMapper.writeValueAsString(badLogin)))
+                .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.success").value(false));
     }
 }

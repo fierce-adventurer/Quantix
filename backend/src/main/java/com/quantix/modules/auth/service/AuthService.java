@@ -9,6 +9,7 @@ import com.quantix.modules.auth.entity.Tenant;
 import com.quantix.modules.auth.entity.User;
 import com.quantix.modules.auth.repository.TenantRepository;
 import com.quantix.modules.auth.repository.UserRepository;
+import com.quantix.modules.auth.security.LoginCircuitBreaker;
 import com.quantix.shared.exception.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,17 +26,20 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final LoginCircuitBreaker circuitBreaker;
 
     public AuthService(
             TenantRepository tenantRepository,
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            JwtService jwtService,
+            LoginCircuitBreaker circuitBreaker
     ) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.circuitBreaker = circuitBreaker;
     }
 
     @Transactional
@@ -74,18 +78,21 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, String clientIp) {
+        circuitBreaker.checkIp(clientIp);
+
         String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
 
-        User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new ApiException("Invalid credentials", HttpStatus.UNAUTHORIZED));
-
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
+        if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            circuitBreaker.recordFailure(clientIp);
             throw new ApiException("Invalid credentials", HttpStatus.UNAUTHORIZED);
         }
 
         Tenant tenant = tenantRepository.findById(user.getTenantId())
                 .orElseThrow(() -> new ApiException("Store tenant not found", HttpStatus.NOT_FOUND));
+
+        circuitBreaker.recordSuccess(clientIp);
 
         String token = jwtService.generateToken(user.getId(), user.getEmail(), tenant.getId(), user.getRole());
 
@@ -93,6 +100,11 @@ public class AuthService {
         TenantResponse tenantResponse = new TenantResponse(tenant.getId(), tenant.getName(), tenant.getSlug());
 
         return new AuthResponse(token, userResponse, tenantResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public AuthResponse login(LoginRequest request) {
+        return login(request, "127.0.0.1");
     }
 
     @Transactional(readOnly = true)

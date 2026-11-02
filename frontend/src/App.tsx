@@ -3,7 +3,7 @@ import { useAuth } from './context/auth-context';
 import { AuthHeader } from './components/auth/AuthHeader';
 import { LoginPage } from './components/auth/LoginPage';
 import { SignupPage } from './components/auth/SignupPage';
-import { StoreSessionLanding } from './components/dashboard/StoreSessionLanding';
+import { ProductCatalogView } from './components/products/ProductCatalogView';
 
 export const App: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -28,7 +28,7 @@ export const App: React.FC = () => {
   }
 
   if (isAuthenticated) {
-    return <StoreSessionLanding />;
+    return <ProductCatalogView />;
   }
 
   return (

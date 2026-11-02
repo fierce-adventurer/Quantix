@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Store, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Store, Mail, Lock, ArrowRight, ShieldCheck, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { GlowButton } from '../ui/GlowButton';
 import { GlassInput } from '../ui/GlassInput';
@@ -19,6 +19,15 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const hasLength = password.length >= 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecial = /[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  const isPasswordValid = hasLength && hasUpper && hasLower && hasNumber && hasSpecial;
+
+  const isEmailValid = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,64}$/.test(email);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -27,12 +36,12 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
       setError('Store / Organization name is required');
       return;
     }
-    if (!email.trim()) {
-      setError('Work email is required');
+    if (!isEmailValid) {
+      setError('Please provide a valid work email address');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!isPasswordValid) {
+      setError('Password does not meet all security criteria');
       return;
     }
     if (password !== confirmPassword) {
@@ -101,7 +110,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
                 exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                 className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2 overflow-hidden"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
                 <span>{error}</span>
               </motion.div>
             )}
@@ -127,13 +136,14 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 icon={<Mail className="w-4 h-4" />}
                 autoComplete="email"
+                error={email && !isEmailValid ? 'Invalid email format' : undefined}
                 required
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <GlassInput
-                label="Password (min 6 characters)"
+                label="Password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
@@ -151,9 +161,40 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 icon={<Lock className="w-4 h-4" />}
                 autoComplete="new-password"
+                error={confirmPassword && password !== confirmPassword ? 'Passwords do not match' : undefined}
                 required
               />
             </div>
+
+            {password && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-3 rounded-xl bg-[#14141d]/70 border border-white/5 space-y-1.5"
+              >
+                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                  Password Security Requirements
+                </span>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <div className={`flex items-center gap-1.5 ${hasLength ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                    <Check className={`w-3 h-3 ${hasLength ? 'opacity-100' : 'opacity-30'}`} />
+                    <span>8+ characters</span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasNumber ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                    <Check className={`w-3 h-3 ${hasNumber ? 'opacity-100' : 'opacity-30'}`} />
+                    <span>Includes number</span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasSpecial ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                    <Check className={`w-3 h-3 ${hasSpecial ? 'opacity-100' : 'opacity-30'}`} />
+                    <span>Special character</span>
+                  </div>
+                  <div className={`flex items-center gap-1.5 ${hasUpper && hasLower ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                    <Check className={`w-3 h-3 ${hasUpper && hasLower ? 'opacity-100' : 'opacity-30'}`} />
+                    <span>Upper & lower case</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             <GlowButton
               type="submit"

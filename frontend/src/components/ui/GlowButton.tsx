@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import { useTheme } from '../../context/theme-context';
 
 interface GlowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -17,6 +18,9 @@ export const GlowButton: React.FC<GlowButtonProps> = ({
   disabled,
   ...props
 }) => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
   const sizeStyles = {
     sm: 'px-3.5 py-1.5 text-xs',
     md: 'px-5 py-2.5 text-sm',
@@ -26,10 +30,12 @@ export const GlowButton: React.FC<GlowButtonProps> = ({
   const variantStyles = {
     primary:
       'bg-gradient-to-r from-[#ff6b00] via-[#ff7800] to-[#ffa500] text-white shadow-glow-button border border-orange-400/30',
-    secondary:
-      'bg-[#181822] text-[#f4f4f5] hover:bg-[#20202c] border border-white/10 hover:border-orange-500/40',
-    ghost:
-      'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
+    secondary: isLight
+      ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 hover:text-zinc-900 border border-zinc-200/90 shadow-sm'
+      : 'bg-[#181822] text-[#f4f4f5] hover:bg-[#20202c] border border-white/10 hover:border-orange-500/40',
+    ghost: isLight
+      ? 'bg-transparent text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+      : 'bg-transparent text-zinc-400 hover:text-white hover:bg-white/5',
   };
 
   return (

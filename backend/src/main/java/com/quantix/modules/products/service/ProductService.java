@@ -3,8 +3,11 @@ package com.quantix.modules.products.service;
 import com.quantix.modules.products.dto.CreateProductRequest;
 import com.quantix.modules.products.dto.ProductResponse;
 import com.quantix.modules.products.dto.UpdateProductRequest;
+import com.quantix.modules.products.dto.StockMovementResponse;
 import com.quantix.modules.products.entity.Product;
+import com.quantix.modules.products.entity.StockMovement;
 import com.quantix.modules.products.repository.ProductRepository;
+import com.quantix.modules.products.repository.StockMovementRepository;
 import com.quantix.shared.context.TenantContext;
 import com.quantix.shared.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ public class ProductService {
     private static final int DEFAULT_LOW_STOCK_THRESHOLD = 5;
 
     private final ProductRepository productRepository;
+    private final StockMovementRepository stockMovementRepository;
 
     @Transactional(readOnly = true)
     public List<ProductResponse> getProducts(String tenantId, String search) {
@@ -103,6 +107,45 @@ public class ProductService {
         Product product = productRepository.findByIdAndTenantId(productId, tenantId)
                 .orElseThrow(() -> new ApiException("Product not found", HttpStatus.NOT_FOUND));
         productRepository.delete(product);
+    }
+
+    @Transactional
+    public StockMovementResponse adjustStock(String tenantId, String productId, int quantityDelta, String reason, String adjustedBy) {
+        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
+                .orElseThrow(() -> new ApiException("Product not found", HttpStatus.NOT_FOUND));
+
+        int prevQty = product.getQuantityOnHand() != null ? product.getQuantityOnHand() : 0;
+        int newQty = prevQty + quantityDelta;
+        if (newQty < 0) {
+            throw new ApiException("Stock cannot be reduced below zero", HttpStatus.BAD_REQUEST);
+        }
+
+        product.setQuantityOnHand(newQty);
+        productRepository.save(product);
+
+        StockMovement movement = StockMovement.builder()
+                .tenantId(tenantId)
+                .productId(productId)
+                .previousQuantity(prevQty)
+                .quantityDelta(quantityDelta)
+                .resultingQuantity(newQty)
+                .reason(reason != null && !reason.trim().isBlank() ? reason.trim() : "Stock adjustment")
+                .adjustedBy(adjustedBy)
+                .build();
+
+        movement = stockMovementRepository.save(movement);
+        return StockMovementResponse.from(movement);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockMovementResponse> getStockMovements(String tenantId, String productId) {
+        if (!productRepository.existsByIdAndTenantId(productId, tenantId)) {
+            throw new ApiException("Product not found", HttpStatus.NOT_FOUND);
+        }
+        return stockMovementRepository.findByTenantIdAndProductIdOrderByCreatedAtDesc(tenantId, productId)
+                .stream()
+                .map(StockMovementResponse::from)
+                .toList();
     }
 
     private ProductResponse toResponse(Product product) {

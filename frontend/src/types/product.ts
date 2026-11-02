@@ -162,3 +162,19 @@ export const getStoredStoreCurrency = (): string => {
   if (typeof window === 'undefined') return 'USD';
   return localStorage.getItem('quantix_store_currency') || 'USD';
 };
+
+export interface StockMovement {
+  id: string;
+  productId: string;
+  previousQuantity: number;
+  quantityDelta: number;
+  resultingQuantity: number;
+  reason: string;
+  adjustedBy?: string;
+  createdAt: string;
+}
+
+export interface AdjustStockInput {
+  quantityDelta: number;
+  reason: string;
+}

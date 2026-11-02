@@ -22,5 +22,7 @@ public interface ProductRepository extends JpaRepository<Product, String> {
 
     boolean existsByTenantIdAndSkuAndIdNot(String tenantId, String sku, String id);
 
+    boolean existsByIdAndTenantId(String id, String tenantId);
+
     void deleteByIdAndTenantId(String id, String tenantId);
 }

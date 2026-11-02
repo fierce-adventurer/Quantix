@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Store, User, LogOut, Sun, Moon } from 'lucide-react';
+import { Layers, User, LogOut, Sun, Moon } from 'lucide-react';
 import { useAuth } from './context/auth-context';
 import { useTheme } from './context/theme-context';
 import { AuthHeader } from './components/auth/AuthHeader';
@@ -16,7 +16,7 @@ import { Product, CreateProductInput } from './types/product';
 import { api } from './lib/api';
 
 export const App: React.FC = () => {
-  const { isAuthenticated, isLoading: isAuthLoading, user, tenant, logout } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === 'light';
 
@@ -144,17 +144,6 @@ export const App: React.FC = () => {
                 <span className={`text-base font-black tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
                   Quantix
                 </span>
-                {tenant && (
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border flex items-center gap-1.5 ${
-                    isLight
-                      ? 'bg-orange-50 text-orange-700 border-orange-200'
-                      : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
-                  }`}>
-                    <Store className="w-3 h-3" />
-                    <span>{tenant.name}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  </span>
-                )}
               </div>
             </div>
 

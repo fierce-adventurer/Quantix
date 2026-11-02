@@ -15,6 +15,7 @@ import { Product, getCurrencySymbol, getStoredStoreCurrency } from '../../types/
 import { useAuth } from '../../context/auth-context';
 import { useTheme } from '../../context/theme-context';
 import { GlowButton } from '../ui/GlowButton';
+import { LinearProfitGraph } from './LinearProfitGraph';
 
 interface DashboardViewProps {
   products: Product[];
@@ -61,7 +62,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-            Store Dashboard
+            {tenant?.name ? `${tenant.name} Dashboard` : 'Store Dashboard'}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
             Real-time stock velocity, catalog telemetry, and low-inventory monitors for {tenant?.name || 'your store'}.
@@ -87,6 +88,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </GlowButton>
         </div>
       </div>
+
+      <LinearProfitGraph products={products} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div

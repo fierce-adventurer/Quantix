@@ -1,15 +1,20 @@
 package com.quantix.modules.products.controller;
 
+import com.quantix.modules.products.dto.AdjustStockRequest;
 import com.quantix.modules.products.dto.CreateProductRequest;
 import com.quantix.modules.products.dto.ProductResponse;
+import com.quantix.modules.products.dto.StockMovementResponse;
 import com.quantix.modules.products.dto.UpdateProductRequest;
 import com.quantix.modules.products.service.ProductService;
 import com.quantix.shared.context.TenantContext;
 import com.quantix.shared.dto.ApiResponse;
 import com.quantix.shared.exception.ApiException;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,7 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -71,6 +75,31 @@ public class ProductController {
         String tenantId = requireTenantId();
         productService.deleteProduct(tenantId, id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Product deleted successfully"));
+    }
+
+    @PostMapping("/{id}/adjust-stock")
+    public ResponseEntity<ApiResponse<StockMovementResponse>> adjustStock(
+            @PathVariable String id,
+            @Valid @RequestBody AdjustStockRequest request
+    ) {
+        String tenantId = requireTenantId();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String adjustedBy = auth != null && auth.getName() != null ? auth.getName() : "Owner";
+        StockMovementResponse movement = productService.adjustStock(
+                tenantId,
+                id,
+                request.quantityDelta(),
+                request.reason(),
+                adjustedBy
+        );
+        return ResponseEntity.ok(ApiResponse.ok(movement, "Stock adjusted successfully"));
+    }
+
+    @GetMapping("/{id}/movements")
+    public ResponseEntity<ApiResponse<List<StockMovementResponse>>> getMovements(@PathVariable String id) {
+        String tenantId = requireTenantId();
+        List<StockMovementResponse> movements = productService.getStockMovements(tenantId, id);
+        return ResponseEntity.ok(ApiResponse.ok(movements, "Stock movements retrieved successfully"));
     }
 
     private String requireTenantId() {

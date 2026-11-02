@@ -4,16 +4,14 @@ import {
   TrendingUp,
   ShieldCheck,
   History,
-  AlertTriangle,
   ArrowRight,
-  BookOpen,
   FileText,
   Zap,
   Sun,
   Moon,
-  X,
   Lock,
   Sparkles,
+  Database,
 } from 'lucide-react';
 import { QuantixLogo } from '../ui/QuantixLogo';
 import { GlowButton } from '../ui/GlowButton';
@@ -23,16 +21,12 @@ import { SignupPage } from '../auth/SignupPage';
 import { useTheme } from '../../context/theme-context';
 
 type AuthViewMode = 'landing' | 'login' | 'signup';
-type DocTab = 'getting-started' | 'logging' | 'telemetry' | 'security';
 
 export const LandingPageView: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === 'light';
 
   const [authMode, setAuthMode] = useState<AuthViewMode>('landing');
-  const [isDocsOpen, setIsDocsOpen] = useState(false);
-  const [activeDocTab, setActiveDocTab] = useState<DocTab>('getting-started');
-
   const [demoHoveredPoint, setDemoHoveredPoint] = useState<number | null>(4);
 
   const demoPoints = [
@@ -44,124 +38,70 @@ export const LandingPageView: React.FC = () => {
     { label: 'Today', profit: 8450, revenue: 21400, margin: 39.5 },
   ];
 
-  const activeDemo = demoHoveredPoint !== null ? demoPoints[demoHoveredPoint] : demoPoints[demoPoints.length - 1];
+  const activeDemo =
+    demoHoveredPoint !== null ? demoPoints[demoHoveredPoint] : demoPoints[demoPoints.length - 1];
 
-  const features = [
+  const scrollToSection = (id: string) => {
+    if (authMode !== 'landing') {
+      setAuthMode('landing');
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      }, 60);
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const gettingStartedSteps = [
     {
-      icon: <TrendingUp className="w-5 h-5 text-orange-400" />,
-      title: 'Real-Time Linear Profit Spline',
-      description:
-        'Computes net profit potential, gross margin %, and inventory velocity across real calendar intervals without synthetic estimates.',
-      tag: 'FINANCIAL TELEMETRY',
+      step: '01',
+      title: 'Store Workspace Initialization',
+      desc: 'Create your dedicated store tenant with automated schema provisioning and encrypted isolation on Neon PostgreSQL.',
     },
     {
-      icon: <History className="w-5 h-5 text-emerald-400" />,
-      title: 'Immutable Stock Audit Trail',
-      description:
-        'Every unit shift is stamped with user identity, previous count, quantity delta, reason note, and exact valuation impact.',
-      tag: 'GOVERNANCE & AUDIT',
+      step: '02',
+      title: 'Regional Currency & Safety Thresholds',
+      desc: 'Set your primary currency (USD, EUR, GBP, INR, JPY, CAD, AUD) and global safety threshold to calibrate depletion monitors.',
     },
     {
-      icon: <ShieldCheck className="w-5 h-5 text-blue-400" />,
-      title: 'Zero-Leak Multi-Tenant Isolation',
-      description:
-        'Cryptographically segmented tenant contexts on Neon PostgreSQL ensure your catalog and profit telemetry are permanently isolated.',
-      tag: 'SECURITY ARCHITECTURE',
+      step: '03',
+      title: 'Catalog Ingestion & Initial Audit Stamp',
+      desc: 'Add products with cost price, selling price, and stock on hand. Quantix automatically commits an initial audit movement log.',
     },
     {
-      icon: <AlertTriangle className="w-5 h-5 text-amber-400" />,
-      title: 'Velocity Early Warning Radar',
-      description:
-        'Dynamic thresholds monitor inventory depletion rates to notify you before high-margin products hit critical stockout points.',
-      tag: 'MARGIN PRESERVATION',
+      step: '04',
+      title: 'Live Spline Profit Telemetry',
+      desc: 'Monitor real-time linear profit curves, gross margin expansion, and inventory velocity across real calendar intervals.',
     },
   ];
 
-  const docsContent: Record<
-    DocTab,
-    { title: string; subtitle: string; icon: React.ReactNode; sections: { heading: string; text: string }[] }
-  > = {
-    'getting-started': {
-      title: 'Getting Started with Quantix',
-      subtitle: 'From registration to live inventory telemetry in under 60 seconds.',
-      icon: <Zap className="w-5 h-5 text-orange-400" />,
-      sections: [
-        {
-          heading: '1. Store Workspace Initialization',
-          text: 'Sign up to create your dedicated store tenant. Quantix creates an isolated logical cluster with scoped schema constraints.',
-        },
-        {
-          heading: '2. Currency & Regional Configuration',
-          text: 'Specify your store currency (USD, EUR, GBP, INR, JPY, CAD, AUD) to power all valuation calculations and default low-stock thresholds.',
-        },
-        {
-          heading: '3. Adding Catalog Products',
-          text: 'Enter product details with cost price, selling price, and stock on hand. Quantix immediately logs the initial stock event into the immutable audit trail.',
-        },
-        {
-          heading: '4. Reading Real-Time Telemetry',
-          text: 'Navigate to your dashboard to inspect your live spline profit curve, inventory valuation, and depletion monitors.',
-        },
-      ],
+  const auditReasonCodes = [
+    {
+      reason: 'Supplier Delivery',
+      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+      desc: 'Inflow batches incrementing available stock with supplier order notes and unit cost attribution.',
     },
-    logging: {
-      title: 'Stock Movement Auditing & Logging',
-      subtitle: 'Complete accountability for every single unit entering or leaving the store.',
-      icon: <FileText className="w-5 h-5 text-emerald-400" />,
-      sections: [
-        {
-          heading: 'Reason Codes & Categories',
-          text: 'Quantix categorizes all adjustments with verified presets: "Supplier Delivery", "Store Sale", "Damaged / Loss", "Physical Inventory Count", and "Return to Stock". Custom operational notes are supported.',
-        },
-        {
-          heading: 'Unit Transition Tracing',
-          text: 'Every log records previous count -> resulting count alongside positive or negative unit deltas to eliminate discrepancies.',
-        },
-        {
-          heading: 'User Identity & Timestamps',
-          text: 'Changes are bound to the authenticated user token and recorded with millisecond-precision UTC timestamps.',
-        },
-      ],
+    {
+      reason: 'Store Sale',
+      color: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+      desc: 'Point-of-sale or online customer order fulfillment decrementing stock and realizing gross margin.',
     },
-    telemetry: {
-      title: 'Mathematical Profit Telemetry',
-      subtitle: 'Accurate profit and valuation calculations driven strictly by real calendar dates.',
-      icon: <TrendingUp className="w-5 h-5 text-amber-400" />,
-      sections: [
-        {
-          heading: 'Net Profit Potential Formulation',
-          text: 'Calculated dynamically as the sum of (Selling Price - Cost Price) multiplied by active quantity on hand across catalog items.',
-        },
-        {
-          heading: 'Gross Margin Percentage',
-          text: 'Computed as (Net Profit / Gross Inventory Valuation) * 100, tracking whether catalog profitability is expanding or contracting.',
-        },
-        {
-          heading: 'Historical Time Intervals',
-          text: 'Quantix generates real calendar checkpoints (7D, 30D, QTD, ALL) reflecting real-world inventory states on those exact dates.',
-        },
-      ],
+    {
+      reason: 'Damaged / Loss',
+      color: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+      desc: 'Discrepancy write-offs, shrinkage, or damaged goods logged with authenticated user stamps.',
     },
-    security: {
-      title: 'Zero-Leak Multi-Tenant Security',
-      subtitle: 'Enterprise-grade isolation powered by Neon PostgreSQL serverless architecture.',
-      icon: <Lock className="w-5 h-5 text-blue-400" />,
-      sections: [
-        {
-          heading: 'Cryptographic Tenant Context',
-          text: 'Every API request carries an authenticated JWT bearing the tenantId. Thread-local contexts and database foreign keys prevent cross-tenant queries.',
-        },
-        {
-          heading: 'Serverless NeonDB Pooling',
-          text: 'Integrated with Neon connection poolers and cold-start resilience to ensure zero data co-mingling and optimal resource efficiency.',
-        },
-        {
-          heading: 'Stateless JWT Session Management',
-          text: 'Signed HMAC-SHA256 tokens authenticate requests with zero server-side state exposure.',
-        },
-      ],
+    {
+      reason: 'Physical Inventory Count',
+      color: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+      desc: 'Periodic manual cycle count recalibrations reconciling theoretical stock with shelf reality.',
     },
-  };
+    {
+      reason: 'Return to Stock',
+      color: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+      desc: 'Customer returns or order cancellations restoring active inventory on hand.',
+    },
+  ];
 
   return (
     <div
@@ -186,10 +126,7 @@ export const LandingPageView: React.FC = () => {
             {authMode === 'landing' && (
               <nav className="hidden md:flex items-center gap-1 text-xs font-semibold">
                 <button
-                  onClick={() => {
-                    setActiveDocTab('getting-started');
-                    setIsDocsOpen(true);
-                  }}
+                  onClick={() => scrollToSection('getting-started')}
                   className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
                     isLight
                       ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
@@ -201,10 +138,7 @@ export const LandingPageView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => {
-                    setActiveDocTab('telemetry');
-                    setIsDocsOpen(true);
-                  }}
+                  onClick={() => scrollToSection('telemetry')}
                   className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
                     isLight
                       ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
@@ -216,10 +150,7 @@ export const LandingPageView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => {
-                    setActiveDocTab('logging');
-                    setIsDocsOpen(true);
-                  }}
+                  onClick={() => scrollToSection('logging')}
                   className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
                     isLight
                       ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
@@ -231,10 +162,7 @@ export const LandingPageView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => {
-                    setActiveDocTab('security');
-                    setIsDocsOpen(true);
-                  }}
+                  onClick={() => scrollToSection('security')}
                   className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
                     isLight
                       ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
@@ -246,11 +174,15 @@ export const LandingPageView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => setIsDocsOpen(true)}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-500/10 text-[#ff6b00] border border-orange-500/25 ml-2 hover:bg-orange-500/20 transition-colors flex items-center gap-1"
+                  onClick={() => scrollToSection('about')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    isLight
+                      ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                      : 'text-zinc-300 hover:text-white hover:bg-white/5'
+                  }`}
                 >
-                  <BookOpen className="w-3 h-3" />
-                  <span>Documentation</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-orange-400" />
+                  <span>About</span>
                 </button>
               </nav>
             )}
@@ -297,7 +229,7 @@ export const LandingPageView: React.FC = () => {
                     : 'bg-white/5 hover:bg-white/10 border-white/10 text-zinc-200'
                 }`}
               >
-                &larr; Overview
+                &larr; Back to Overview
               </button>
             )}
           </div>
@@ -339,7 +271,7 @@ export const LandingPageView: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-20 w-full"
+              className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-24 w-full"
             >
               <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
                 <div className="flex-1 text-center lg:text-left space-y-6">
@@ -379,14 +311,6 @@ export const LandingPageView: React.FC = () => {
                       }`}
                     >
                       Sign In to Workspace
-                    </button>
-
-                    <button
-                      onClick={() => setIsDocsOpen(true)}
-                      className="px-4 py-3 rounded-2xl text-xs font-semibold text-[#ff6b00] hover:underline flex items-center gap-1.5"
-                    >
-                      <BookOpen className="w-4 h-4" />
-                      <span>Interactive Docs</span>
                     </button>
                   </div>
                 </div>
@@ -480,186 +404,258 @@ export const LandingPageView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-8">
+              <section id="getting-started" className="scroll-mt-24 space-y-8">
                 <div className="text-center max-w-2xl mx-auto space-y-3">
                   <span className="text-xs font-bold tracking-widest uppercase text-[#ff6b00]">
-                    ARCHITECTURAL CAPABILITIES
+                    FAST ONBOARDING
                   </span>
                   <h2 className={`text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                    Engineered for Precision, Velocity & Absolute Isolation
+                    Getting Started in Under 60 Seconds
                   </h2>
                   <p className="text-xs sm:text-sm text-zinc-400">
-                    Explore the four core engines powering Quantix retail and store intelligence.
+                    Follow four streamlined steps to take your store from initial signup to full inventory velocity telemetry.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {features.map((feat, idx) => (
-                    <motion.div
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {gettingStartedSteps.map((step, idx) => (
+                    <div
                       key={idx}
-                      whileHover={{ y: -4 }}
-                      transition={{ duration: 0.2 }}
-                      className={`rounded-2xl border p-6 backdrop-blur-xl transition-all ${
+                      className={`rounded-2xl border p-6 backdrop-blur-xl transition-all relative ${
                         isLight
-                          ? 'bg-white border-zinc-200 shadow-sm hover:shadow-md hover:border-orange-300'
-                          : 'bg-[#101018]/80 border-white/5 hover:border-orange-500/30 hover:bg-[#141420]'
+                          ? 'bg-white border-zinc-200 shadow-sm hover:border-orange-300'
+                          : 'bg-[#101018]/80 border-white/5 hover:border-orange-500/30'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                          {feat.icon}
-                        </div>
-                        <span className="text-[10px] font-bold tracking-wider uppercase text-zinc-500 font-mono">
-                          {feat.tag}
-                        </span>
-                      </div>
-                      <h3 className={`text-base font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                        {feat.title}
+                      <span className="text-3xl font-black text-orange-500/30 font-mono block mb-2">
+                        {step.step}
+                      </span>
+                      <h3 className={`text-sm font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                        {step.title}
                       </h3>
-                      <p className="text-xs text-zinc-400 leading-relaxed">{feat.description}</p>
-                    </motion.div>
+                      <p className="text-xs text-zinc-400 leading-relaxed font-normal">{step.desc}</p>
+                    </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div
-                className={`rounded-3xl border p-8 backdrop-blur-2xl text-center space-y-6 relative overflow-hidden ${
-                  isLight
-                    ? 'bg-gradient-to-r from-orange-500/10 via-white to-orange-500/10 border-orange-200'
-                    : 'bg-gradient-to-r from-orange-500/10 via-[#0e0e14] to-orange-500/10 border-orange-500/20'
-                }`}
-              >
-                <div className="max-w-xl mx-auto space-y-3">
-                  <h3 className={`text-2xl font-black ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                    Ready to Accelerate Your Store Velocity?
-                  </h3>
+              <section id="telemetry" className="scroll-mt-24 space-y-8">
+                <div className="text-center max-w-2xl mx-auto space-y-3">
+                  <span className="text-xs font-bold tracking-widest uppercase text-emerald-400">
+                    FINANCIAL TELEMETRY
+                  </span>
+                  <h2 className={`text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                    Mathematical Profit Splines & Calendar Intervals
+                  </h2>
                   <p className="text-xs sm:text-sm text-zinc-400">
-                    Launch your workspace in seconds with automated multi-tenant database provisioning.
+                    Quantix replaces arbitrary estimates with strict mathematical calculations derived directly from product margins and stock movements.
                   </p>
-                  <div className="pt-2">
-                    <GlowButton onClick={() => setAuthMode('signup')} size="lg">
-                      <span>Create Workspace Now</span>
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </GlowButton>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div
+                    className={`rounded-2xl border p-6 backdrop-blur-xl ${
+                      isLight ? 'bg-white border-zinc-200' : 'bg-[#101018]/80 border-white/5'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#ff6b00] mb-4">
+                      <TrendingUp className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-sm font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                      Net Profit Potential Formula
+                    </h3>
+                    <p className="text-xs text-zinc-400 leading-relaxed mb-3">
+                      Calculated dynamically as the sum of (Selling Price - Cost Price) multiplied by active units on hand across your catalog.
+                    </p>
+                    <code className="text-[11px] font-mono px-2.5 py-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 block">
+                      Profit = &Sigma; (Sell - Cost) &times; Qty
+                    </code>
+                  </div>
+
+                  <div
+                    className={`rounded-2xl border p-6 backdrop-blur-xl ${
+                      isLight ? 'bg-white border-zinc-200' : 'bg-[#101018]/80 border-white/5'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-sm font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                      Gross Margin Percentage
+                    </h3>
+                    <p className="text-xs text-zinc-400 leading-relaxed mb-3">
+                      Reveals the overall financial health of your inventory by dividing cumulative profit potential by total gross valuation.
+                    </p>
+                    <code className="text-[11px] font-mono px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 block">
+                      Margin% = (Profit / Revenue) &times; 100
+                    </code>
+                  </div>
+
+                  <div
+                    className={`rounded-2xl border p-6 backdrop-blur-xl ${
+                      isLight ? 'bg-white border-zinc-200' : 'bg-[#101018]/80 border-white/5'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
+                      <History className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-sm font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                      Real Calendar Checkpoints
+                    </h3>
+                    <p className="text-xs text-zinc-400 leading-relaxed mb-3">
+                      Checkpoints across 7D, 30D, QTD, and ALL are computed from actual creation dates and historical stock adjustments.
+                    </p>
+                    <span className="text-[11px] font-mono text-zinc-500 block">
+                      Strictly 0% synthetic multipliers
+                    </span>
                   </div>
                 </div>
-              </div>
+              </section>
+
+              <section id="logging" className="scroll-mt-24 space-y-8">
+                <div className="text-center max-w-2xl mx-auto space-y-3">
+                  <span className="text-xs font-bold tracking-widest uppercase text-blue-400">
+                    AUDIT & TRACEABILITY
+                  </span>
+                  <h2 className={`text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                    Immutable Stock Movement Logging
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-400">
+                    Every unit shift is stamped with user identity, previous count, quantity delta, and unit valuation impact.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {auditReasonCodes.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-2xl border p-5 backdrop-blur-xl ${
+                        isLight ? 'bg-white border-zinc-200' : 'bg-[#101018]/80 border-white/5'
+                      }`}
+                    >
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border inline-block mb-3 ${item.color}`}>
+                        {item.reason}
+                      </span>
+                      <p className="text-xs text-zinc-400 leading-relaxed font-normal">{item.desc}</p>
+                    </div>
+                  ))}
+                  <div
+                    className={`rounded-2xl border p-5 backdrop-blur-xl flex flex-col justify-center ${
+                      isLight ? 'bg-orange-50/40 border-orange-200' : 'bg-orange-500/5 border-orange-500/20'
+                    }`}
+                  >
+                    <span className="text-xs font-bold text-[#ff6b00] block mb-1">Audit Trail Guarantee</span>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      All events are cryptographically isolated per tenant and queryable via dedicated audit endpoints.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section id="security" className="scroll-mt-24 space-y-8">
+                <div className="text-center max-w-2xl mx-auto space-y-3">
+                  <span className="text-xs font-bold tracking-widest uppercase text-amber-400">
+                    SECURITY ARCHITECTURE
+                  </span>
+                  <h2 className={`text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                    Zero-Leak Multi-Tenant Isolation on NeonDB
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-400">
+                    Enterprise-grade logical tenant separation backed by Neon serverless PostgreSQL connection poolers.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div
+                    className={`rounded-2xl border p-6 backdrop-blur-xl ${
+                      isLight ? 'bg-white border-zinc-200' : 'bg-[#101018]/80 border-white/5'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#ff6b00] mb-4">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-sm font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                      Thread-Local Context Guard
+                    </h3>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Authenticated requests bind tenant identity into thread-local memory. Cross-tenant leakage is prevented at runtime.
+                    </p>
+                  </div>
+
+                  <div
+                    className={`rounded-2xl border p-6 backdrop-blur-xl ${
+                      isLight ? 'bg-white border-zinc-200' : 'bg-[#101018]/80 border-white/5'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+                      <Database className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-sm font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                      Serverless NeonDB Pooling
+                    </h3>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Optimized for cold-start performance, pooling maintains scalable PostgreSQL connections across bursty workloads.
+                    </p>
+                  </div>
+
+                  <div
+                    className={`rounded-2xl border p-6 backdrop-blur-xl ${
+                      isLight ? 'bg-white border-zinc-200' : 'bg-[#101018]/80 border-white/5'
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-sm font-bold mb-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                      Stateless HMAC JWT Tokens
+                    </h3>
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      Cryptographically signed bearer tokens protect store access with zero risk of session hijacking or server-side leaks.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section id="about" className="scroll-mt-24 space-y-8">
+                <div className="text-center max-w-2xl mx-auto space-y-3">
+                  <span className="text-xs font-bold tracking-widest uppercase text-[#ff6b00]">
+                    ABOUT QUANTIX
+                  </span>
+                  <h2 className={`text-2xl sm:text-3xl font-extrabold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                    The High-Velocity Inventory Operating System
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-400">
+                    Quantix was designed from the ground up for retailers, wholesalers, and e-commerce stores requiring millisecond margin transparency and zero inventory drift.
+                  </p>
+                </div>
+
+                <div
+                  className={`rounded-3xl border p-8 backdrop-blur-2xl text-center space-y-6 relative overflow-hidden ${
+                    isLight
+                      ? 'bg-gradient-to-r from-orange-500/10 via-white to-orange-500/10 border-orange-200'
+                      : 'bg-gradient-to-r from-orange-500/10 via-[#0e0e14] to-orange-500/10 border-orange-500/20'
+                  }`}
+                >
+                  <div className="max-w-xl mx-auto space-y-3">
+                    <h3 className={`text-2xl font-black ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                      Ready to Scale Your Store Velocity?
+                    </h3>
+                    <p className="text-xs sm:text-sm text-zinc-400">
+                      Launch your store workspace in seconds with automated multi-tenant database provisioning.
+                    </p>
+                    <div className="pt-2">
+                      <GlowButton onClick={() => setAuthMode('signup')} size="lg">
+                        <span>Launch Your Store Free</span>
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </GlowButton>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
-
-      <AnimatePresence>
-        {isDocsOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDocsOpen(false)}
-              className="absolute inset-0 bg-black/70 backdrop-blur-md"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 16 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-              className={`relative z-10 w-full max-w-3xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[85vh] ${
-                isLight ? 'bg-white border-zinc-200' : 'bg-[#0f0f16] border-white/10'
-              }`}
-            >
-              <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#ff6b00]">
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-base font-bold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                      Quantix Developer & Operations Docs
-                    </h3>
-                    <p className="text-xs text-zinc-400">Complete architectural guide, stock audit rules, and telemetry formulas.</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setIsDocsOpen(false)}
-                  className={`p-2 rounded-xl border transition-colors ${
-                    isLight ? 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-600' : 'bg-white/5 hover:bg-white/10 border-white/10 text-zinc-400'
-                  }`}
-                  aria-label="Close Documentation"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex border-b border-white/5 overflow-x-auto p-2 gap-1.5 no-scrollbar">
-                {(['getting-started', 'logging', 'telemetry', 'security'] as DocTab[]).map((tab) => {
-                  const active = activeDocTab === tab;
-                  return (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveDocTab(tab)}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
-                        active
-                          ? 'bg-gradient-to-r from-[#ff4500] to-[#ffa500] text-white border-transparent shadow-md shadow-orange-500/20'
-                          : isLight
-                          ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-zinc-200'
-                          : 'bg-white/5 border-white/5 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {tab === 'getting-started' && '1. Getting Started'}
-                      {tab === 'logging' && '2. Logging & Audit'}
-                      {tab === 'telemetry' && '3. Profit Telemetry'}
-                      {tab === 'security' && '4. NeonDB Security'}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="p-6 overflow-y-auto space-y-6">
-                <div>
-                  <h4 className={`text-lg font-bold flex items-center gap-2 ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                    {docsContent[activeDocTab].icon}
-                    <span>{docsContent[activeDocTab].title}</span>
-                  </h4>
-                  <p className="text-xs text-zinc-400 mt-1">{docsContent[activeDocTab].subtitle}</p>
-                </div>
-
-                <div className="space-y-4">
-                  {docsContent[activeDocTab].sections.map((sec, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-4 rounded-xl border ${
-                        isLight ? 'bg-zinc-50 border-zinc-200' : 'bg-white/5 border-white/5'
-                      }`}
-                    >
-                      <h5 className={`text-xs font-bold mb-1 ${isLight ? 'text-zinc-900' : 'text-orange-400'}`}>
-                        {sec.heading}
-                      </h5>
-                      <p className="text-xs text-zinc-400 leading-relaxed">{sec.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-4 border-t border-white/5 flex items-center justify-between text-xs">
-                <span className="text-zinc-500">Press Esc or click outside to close</span>
-                <GlowButton
-                  size="sm"
-                  onClick={() => {
-                    setIsDocsOpen(false);
-                    setAuthMode('signup');
-                  }}
-                >
-                  <span>Launch Workspace</span>
-                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                </GlowButton>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

@@ -68,8 +68,8 @@ export const ClusterWakingScreen: React.FC = () => {
 
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold border mb-6 backdrop-blur-md transition-colors bg-orange-500/10 border-orange-500/25 text-[#ff6b00]">
           <span className="w-2 h-2 rounded-full bg-[#ff6b00] animate-ping" />
-          <span>Waking Neon Serverless Cluster</span>
-          <span className="text-zinc-500 text-[10px] font-mono">• Multi-Tenant Handshake</span>
+          <span>SYNCHRONIZING STORE VELOCITY</span>
+          <span className="text-zinc-500 text-[10px] font-mono">• Quantum Engine Active</span>
         </div>
 
         <div
@@ -125,7 +125,7 @@ export const ClusterWakingScreen: React.FC = () => {
         </div>
 
         <p className="text-[11px] text-zinc-500 mt-5">
-          Encrypting tenant schema session • Neon serverless cold-start in progress
+          Calibrating sub-millisecond telemetry • Multi-tenant encryption active
         </p>
       </motion.div>
     </div>

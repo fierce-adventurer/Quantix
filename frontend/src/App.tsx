@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Sun, Moon } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useAuth } from './context/auth-context';
 import { useTheme } from './context/theme-context';
 import { Sidebar, NavigationTab } from './components/layout/Sidebar';
@@ -19,8 +19,9 @@ import { api } from './lib/api';
 
 export const App: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const isLight = theme === 'light';
+  const username = user?.email ? user.email.split('@')[0] : 'Owner';
 
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
 
@@ -122,30 +123,18 @@ export const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleTheme}
-                className={`p-2 rounded-xl border transition-colors ${
-                  isLight
-                    ? 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700'
-                    : 'bg-white/5 hover:bg-white/10 border-white/10 text-amber-400'
-                }`}
-                title={`Switch to ${isLight ? 'Obsidian Dark' : 'Obsidian Light'}`}
-              >
-                {isLight ? <Moon className="w-4 h-4 text-orange-500" /> : <Sun className="w-4 h-4 text-amber-400" />}
-              </button>
-
               {user && (
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs transition-colors cursor-pointer ${
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs transition-all cursor-pointer ${
                     isLight
-                      ? 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-800'
+                      ? 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-800 shadow-sm'
                       : 'bg-white/5 hover:bg-white/10 border-white/10 text-zinc-200'
                   }`}
                   title="Store Settings & Profile"
                 >
                   <User className="w-3.5 h-3.5 text-orange-400" />
-                  <span className="font-medium">{user.email}</span>
+                  <span className="font-semibold capitalize">{username}</span>
                   <span className="text-[10px] uppercase font-bold text-orange-400 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
                     {user.role}
                   </span>

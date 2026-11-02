@@ -5,6 +5,7 @@ import com.quantix.modules.products.dto.ProductResponse;
 import com.quantix.modules.products.dto.UpdateProductRequest;
 import com.quantix.modules.products.entity.Product;
 import com.quantix.modules.products.repository.ProductRepository;
+import com.quantix.shared.context.TenantContext;
 import com.quantix.shared.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -105,9 +106,13 @@ public class ProductService {
     }
 
     private ProductResponse toResponse(Product product) {
+        int defaultThreshold = DEFAULT_LOW_STOCK_THRESHOLD;
+        if (TenantContext.getTenant() != null && TenantContext.getTenant().defaultLowStockThreshold() != null) {
+            defaultThreshold = TenantContext.getTenant().defaultLowStockThreshold();
+        }
         int threshold = product.getLowStockThreshold() != null
                 ? product.getLowStockThreshold()
-                : DEFAULT_LOW_STOCK_THRESHOLD;
+                : defaultThreshold;
         boolean isLowStock = product.getQuantityOnHand() <= threshold;
 
         return new ProductResponse(

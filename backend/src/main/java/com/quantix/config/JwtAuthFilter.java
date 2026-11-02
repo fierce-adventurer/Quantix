@@ -54,7 +54,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
                 tenantRepository.findById(tenantId).ifPresent(tenant ->
-                    TenantContext.setTenant(new TenantResponse(tenant.getId(), tenant.getName(), tenant.getSlug()))
+                    TenantContext.setTenant(TenantResponse.from(tenant))
                 );
             }
         }

@@ -35,6 +35,15 @@ public class Tenant {
     @Column(nullable = false, unique = true)
     private String slug;
 
+    @Column(name = "default_low_stock_threshold")
+    private Integer defaultLowStockThreshold;
+
+    @Column(name = "currency")
+    private String currency;
+
+    @Column(name = "theme")
+    private String theme;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -44,12 +53,24 @@ public class Tenant {
     public Tenant(String name, String slug) {
         this.name = name;
         this.slug = slug;
+        this.defaultLowStockThreshold = 5;
+        this.currency = "USD";
+        this.theme = "dark";
     }
 
     @PrePersist
     public void onPrePersist() {
         if (this.id == null) {
             this.id = UUID.randomUUID().toString();
+        }
+        if (this.defaultLowStockThreshold == null) {
+            this.defaultLowStockThreshold = 5;
+        }
+        if (this.currency == null || this.currency.isBlank()) {
+            this.currency = "USD";
+        }
+        if (this.theme == null || this.theme.isBlank()) {
+            this.theme = "dark";
         }
         Instant now = Instant.now();
         this.createdAt = now;

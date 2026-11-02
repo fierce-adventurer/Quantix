@@ -60,7 +60,7 @@ public class AuthService {
         String token = jwtService.generateToken(user.getId(), user.getEmail(), tenant.getId(), user.getRole());
 
         UserResponse userResponse = new UserResponse(user.getId(), user.getEmail(), user.getRole(), tenant.getId());
-        TenantResponse tenantResponse = new TenantResponse(tenant.getId(), tenant.getName(), tenant.getSlug());
+        TenantResponse tenantResponse = TenantResponse.from(tenant);
 
         return new AuthResponse(token, userResponse, tenantResponse);
     }
@@ -85,7 +85,7 @@ public class AuthService {
         String token = jwtService.generateToken(user.getId(), user.getEmail(), tenant.getId(), user.getRole());
 
         UserResponse userResponse = new UserResponse(user.getId(), user.getEmail(), user.getRole(), tenant.getId());
-        TenantResponse tenantResponse = new TenantResponse(tenant.getId(), tenant.getName(), tenant.getSlug());
+        TenantResponse tenantResponse = TenantResponse.from(tenant);
 
         return new AuthResponse(token, userResponse, tenantResponse);
     }
@@ -104,7 +104,7 @@ public class AuthService {
                 .orElseThrow(() -> new ApiException("Store tenant not found", HttpStatus.NOT_FOUND));
 
         UserResponse userResponse = new UserResponse(user.getId(), user.getEmail(), user.getRole(), tenant.getId());
-        TenantResponse tenantResponse = new TenantResponse(tenant.getId(), tenant.getName(), tenant.getSlug());
+        TenantResponse tenantResponse = TenantResponse.from(tenant);
 
         return new AuthResponse(null, userResponse, tenantResponse);
     }

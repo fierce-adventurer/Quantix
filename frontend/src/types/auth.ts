@@ -9,6 +9,9 @@ export interface Tenant {
   id: string;
   name: string;
   slug: string;
+  defaultLowStockThreshold?: number;
+  currency?: string;
+  theme?: string;
 }
 
 export interface AuthResponseData {

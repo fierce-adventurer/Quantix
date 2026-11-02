@@ -76,7 +76,6 @@ jobs:
             DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_EXPIRATION=${{ secrets.JWT_EXPIRATION || '86400000' }}
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
             EOF
             docker compose down
             docker compose up -d --build --remove-orphans

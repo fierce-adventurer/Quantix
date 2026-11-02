@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Store, Mail, Lock, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Store, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { GlowButton } from '../ui/GlowButton';
 import { GlassInput } from '../ui/GlassInput';
@@ -153,17 +153,6 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
                 autoComplete="new-password"
                 required
               />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs text-zinc-400">
-              <div className="flex items-center gap-2 p-2 rounded-xl bg-[#14141c]/60 border border-white/5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                <span>Isolated DB partition per store</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded-xl bg-[#14141c]/60 border border-white/5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-                <span>NeonDB compute auto-suspend</span>
-              </div>
             </div>
 
             <GlowButton

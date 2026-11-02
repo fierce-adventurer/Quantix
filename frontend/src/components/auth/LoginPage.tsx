@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { GlowButton } from '../ui/GlowButton';
 import { GlassInput } from '../ui/GlassInput';
@@ -40,12 +40,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
     }
   };
 
-  const handleDemoFill = () => {
-    setEmail('owner@apexstore.com');
-    setPassword('secret123');
-    setError(null);
-  };
-
   return (
     <div className="relative w-full max-w-md mx-auto flex flex-col items-center">
       <motion.div
@@ -68,7 +62,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
         className="relative z-10 w-full"
       >
         <div className="text-center mb-6">
-          <PillBadge text="Store-Independent Multi-Tenant Architecture" className="mb-3" />
+          <PillBadge tag="NEW" text="Next-Gen Multi-Store Inventory Control" className="mb-3" />
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
             Welcome Back to <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b00] to-[#ffa500]">Quantix</span>
           </h1>
@@ -131,14 +125,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onGoToSignup }) => {
                 />
                 <span>Remember this store</span>
               </label>
-              <button
-                type="button"
-                onClick={handleDemoFill}
-                className="text-orange-400 hover:text-orange-300 font-medium inline-flex items-center gap-1 transition-colors"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Fill Demo Admin
-              </button>
             </div>
 
             <GlowButton

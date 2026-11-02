@@ -10,12 +10,12 @@ import {
   LogOut,
   AlertTriangle,
   Coins,
-  Edit2,
-  Trash2,
   RefreshCw,
   X,
   MapPin,
   Globe,
+  ChevronRight,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import {
@@ -29,6 +29,7 @@ import { api } from '../../lib/api';
 import { GlowButton } from '../ui/GlowButton';
 import { ProductModal } from './ProductModal';
 import { DeleteProductDialog } from './DeleteProductDialog';
+import { ProductDetailFloatingWindow } from './ProductDetailFloatingWindow';
 
 export const ProductCatalogView: React.FC = () => {
   const { user, tenant, logout } = useAuth();
@@ -40,6 +41,9 @@ export const ProductCatalogView: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
@@ -67,9 +71,13 @@ export const ProductCatalogView: React.FC = () => {
     if (editingProduct) {
       const response = await api.put<Product>(`/api/products/${editingProduct.id}`, input);
       if (response.data) {
+        const updated = response.data;
         setProducts((prev) =>
-          prev.map((p) => (p.id === editingProduct.id ? response.data! : p))
+          prev.map((p) => (p.id === editingProduct.id ? updated : p))
         );
+        if (selectedProduct?.id === editingProduct.id) {
+          setSelectedProduct(updated);
+        }
       }
     } else {
       const response = await api.post<Product>('/api/products', input);
@@ -85,6 +93,10 @@ export const ProductCatalogView: React.FC = () => {
     try {
       await api.delete(`/api/products/${deletingProduct.id}`);
       setProducts((prev) => prev.filter((p) => p.id !== deletingProduct.id));
+      if (selectedProduct?.id === deletingProduct.id) {
+        setIsDetailOpen(false);
+        setSelectedProduct(null);
+      }
       setIsDeleteDialogOpen(false);
       setDeletingProduct(null);
     } finally {
@@ -279,23 +291,29 @@ export const ProductCatalogView: React.FC = () => {
 
         <div className="glass-panel rounded-3xl overflow-hidden border border-white/10">
           <div className="p-4 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Instant search by product name or SKU..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl bg-[#14141c] border border-white/10 pl-10 pr-9 py-2 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Instant search by product name or SKU..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-xl bg-[#14141c] border border-white/10 pl-10 pr-9 py-2 text-xs sm:text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="text-[11px] text-zinc-500 hidden lg:flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                <span>Click any row to open product telemetry & manage stock</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#14141c] border border-white/10 overflow-x-auto text-xs">
@@ -352,21 +370,20 @@ export const ProductCatalogView: React.FC = () => {
                   <th className="py-3.5 px-4">Threshold</th>
                   <th className="py-3.5 px-4">Cost Price</th>
                   <th className="py-3.5 px-4">Selling Price</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                  <th className="py-3.5 px-4 sm:px-6">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-zinc-400">
+                    <td colSpan={7} className="py-12 text-center text-zinc-400">
                       <RefreshCw className="w-6 h-6 animate-spin text-orange-400 mx-auto mb-2" />
                       Loading inventory records...
                     </td>
                   </tr>
                 ) : filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-zinc-400">
+                    <td colSpan={7} className="py-12 text-center text-zinc-400">
                       <div className="w-12 h-12 rounded-2xl bg-[#14141c] border border-white/10 flex items-center justify-center mx-auto mb-3 text-zinc-500">
                         <Package className="w-6 h-6" />
                       </div>
@@ -405,10 +422,14 @@ export const ProductCatalogView: React.FC = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="hover:bg-white/[0.02] transition-colors group"
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setIsDetailOpen(true);
+                        }}
+                        className="hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer group select-none relative"
                       >
                         <td className="py-3.5 px-4 sm:px-6">
-                          <div className="font-semibold text-white">{product.name}</div>
+                          <div className="font-semibold text-white group-hover:text-orange-300 transition-colors">{product.name}</div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-300 border border-orange-500/20">
                               {product.sku}
@@ -475,45 +496,23 @@ export const ProductCatalogView: React.FC = () => {
                           )}
                         </td>
 
-                        <td className="py-3.5 px-4">
-                          {isOut ? (
-                            <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/30 text-[11px] font-semibold">
-                              Out of Stock
-                            </span>
-                          ) : isLow ? (
-                            <span className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/30 text-[11px] font-semibold inline-flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                              Low Stock
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold">
-                              In Stock
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="py-3.5 px-4 sm:px-6 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => {
-                                setEditingProduct(product);
-                                setIsModalOpen(true);
-                              }}
-                              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition-colors"
-                              title="Edit product"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setDeletingProduct(product);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-colors"
-                              title="Delete product"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                        <td className="py-3.5 px-4 sm:px-6">
+                          <div className="flex items-center justify-between">
+                            {isOut ? (
+                              <span className="px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/30 text-[11px] font-semibold">
+                                Out of Stock
+                              </span>
+                            ) : isLow ? (
+                              <span className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/30 text-[11px] font-semibold inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                                Low Stock
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold">
+                                In Stock
+                              </span>
+                            )}
+                            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-orange-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
                           </div>
                         </td>
                       </motion.tr>
@@ -545,6 +544,29 @@ export const ProductCatalogView: React.FC = () => {
         onConfirm={handleDelete}
         product={deletingProduct}
         isDeleting={isDeleting}
+      />
+
+      <ProductDetailFloatingWindow
+        isOpen={isDetailOpen}
+        product={selectedProduct}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedProduct(null);
+        }}
+        onEdit={(prod) => {
+          setEditingProduct(prod);
+          setIsModalOpen(true);
+        }}
+        onDelete={(prod) => {
+          setDeletingProduct(prod);
+          setIsDeleteDialogOpen(true);
+        }}
+        onProductUpdated={(updated) => {
+          setProducts((prev) =>
+            prev.map((p) => (p.id === updated.id ? updated : p))
+          );
+          setSelectedProduct(updated);
+        }}
       />
     </div>
   );

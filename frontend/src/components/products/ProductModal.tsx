@@ -1,6 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Package, Tag, Layers, AlertCircle, Compass, MapPin, Globe, DollarSign } from 'lucide-react';
+import {
+  X,
+  Package,
+  Tag,
+  Layers,
+  AlertCircle,
+  Compass,
+  MapPin,
+  Globe,
+  DollarSign,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  ShieldCheck,
+  Check,
+} from 'lucide-react';
 import {
   Product,
   CreateProductInput,
@@ -32,6 +47,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [costPrice, setCostPrice] = useState<number | ''>('');
   const [sellingPrice, setSellingPrice] = useState<number | ''>('');
   const [lowStockThreshold, setLowStockThreshold] = useState<number | ''>(5);
+  const [modalStep, setModalStep] = useState<1 | 2>(1);
   const [currencyMode, setCurrencyMode] = useState<'input' | 'location'>('input');
   const [currency, setCurrency] = useState('USD');
   const [countryLocation, setCountryLocation] = useState('United States');
@@ -68,9 +84,52 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setCountryLocation('United States');
       setLocationType('Retail Storefront');
     }
+    setModalStep(1);
     setDetectedInfo(null);
     setError(null);
   }, [initialData, isOpen]);
+
+  const changes = useMemo(() => {
+    if (!initialData) return [];
+    const diffs: { field: string; from: string; to: string }[] = [];
+    if (initialData.name.trim() !== name.trim()) {
+      diffs.push({ field: 'Product Name', from: initialData.name, to: name.trim() });
+    }
+    if (initialData.sku.trim().toUpperCase() !== sku.trim().toUpperCase()) {
+      diffs.push({ field: 'SKU Code', from: initialData.sku, to: sku.trim().toUpperCase() });
+    }
+    const currentQty = typeof quantityOnHand === 'number' ? quantityOnHand : 0;
+    if (initialData.quantityOnHand !== currentQty) {
+      diffs.push({ field: 'Stock on Hand', from: `${initialData.quantityOnHand} units`, to: `${currentQty} units` });
+    }
+    const currentCost = typeof costPrice === 'number' ? costPrice : undefined;
+    if ((initialData.costPrice || undefined) !== currentCost) {
+      diffs.push({
+        field: 'Cost Price',
+        from: initialData.costPrice !== undefined ? `${getCurrencySymbol(initialData.currency)}${Number(initialData.costPrice).toFixed(2)}` : 'None',
+        to: currentCost !== undefined ? `${getCurrencySymbol(currency)}${Number(currentCost).toFixed(2)}` : 'None',
+      });
+    }
+    const currentSelling = typeof sellingPrice === 'number' ? sellingPrice : undefined;
+    if ((initialData.sellingPrice || undefined) !== currentSelling) {
+      diffs.push({
+        field: 'Selling Price',
+        from: initialData.sellingPrice !== undefined ? `${getCurrencySymbol(initialData.currency)}${Number(initialData.sellingPrice).toFixed(2)}` : 'None',
+        to: currentSelling !== undefined ? `${getCurrencySymbol(currency)}${Number(currentSelling).toFixed(2)}` : 'None',
+      });
+    }
+    if ((initialData.currency || 'USD') !== (currency || 'USD')) {
+      diffs.push({ field: 'Currency', from: initialData.currency || 'USD', to: currency || 'USD' });
+    }
+    if ((initialData.locationType || '') !== (locationType.trim() || '')) {
+      diffs.push({ field: 'Storage Location', from: initialData.locationType || 'None', to: locationType.trim() || 'None' });
+    }
+    const currentThreshold = typeof lowStockThreshold === 'number' ? lowStockThreshold : 5;
+    if ((initialData.lowStockThreshold || 5) !== currentThreshold) {
+      diffs.push({ field: 'Low Stock Threshold', from: `${initialData.lowStockThreshold || 5}`, to: `${currentThreshold}` });
+    }
+    return diffs;
+  }, [initialData, name, sku, quantityOnHand, costPrice, sellingPrice, currency, locationType, lowStockThreshold]);
 
   const handleCurrencyChange = (newCurrency: string) => {
     setCurrency(newCurrency);
@@ -96,7 +155,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     setTimeout(() => setDetectedInfo(null), 3500);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleProceedToStep2 = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -113,6 +172,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setError('Quantity on hand cannot be negative');
       return;
     }
+    if (typeof costPrice === 'number' && costPrice < 0) {
+      setError('Cost price cannot be negative');
+      return;
+    }
+    if (typeof sellingPrice === 'number' && sellingPrice < 0) {
+      setError('Selling price cannot be negative');
+      return;
+    }
+    if (typeof lowStockThreshold === 'number' && lowStockThreshold < 0) {
+      setError('Low stock threshold cannot be negative');
+      return;
+    }
+
+    setModalStep(2);
+  };
+
+  const handleFinalApply = async () => {
+    setError(null);
+    const qty = typeof quantityOnHand === 'number' ? quantityOnHand : 0;
 
     const payload: CreateProductInput = {
       name: name.trim(),
@@ -136,6 +214,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       } else {
         setError('Failed to save product');
       }
+      setModalStep(1);
     } finally {
       setIsSubmitting(false);
     }
@@ -168,13 +247,20 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   <Package className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">
-                    {isEditMode ? 'Edit Product Details' : 'Add New Product'}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white">
+                      {isEditMode ? 'Edit Product Details' : 'Add New Product'}
+                    </h3>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                      Step {modalStep} of 2
+                    </span>
+                  </div>
                   <p className="text-xs text-zinc-400">
-                    {isEditMode
-                      ? 'Update item specifications, pricing, and stock metrics'
-                      : 'Register a new catalog item under your store partition'}
+                    {modalStep === 1
+                      ? isEditMode
+                        ? 'Update item specifications, pricing, and stock metrics'
+                        : 'Register a new catalog item under your store partition'
+                      : 'Review proposed modifications before applying changes'}
                   </p>
                 </div>
               </div>
@@ -193,7 +279,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {modalStep === 1 ? (
+              <form onSubmit={handleProceedToStep2} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <GlassInput
                   label="Product Name *"
@@ -454,11 +541,109 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 <GlowButton type="button" variant="secondary" size="md" onClick={onClose}>
                   Cancel
                 </GlowButton>
-                <GlowButton type="submit" size="md" isLoading={isSubmitting}>
-                  {isEditMode ? 'Update Product' : 'Add to Catalog'}
+                <GlowButton type="submit" size="md">
+                  <span>Next: Review & Apply</span>
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
                 </GlowButton>
               </div>
             </form>
+          ) : (
+            <div className="space-y-4">
+              {isEditMode ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-orange-400" />
+                      <span>Proposed Modifications for {initialData?.sku}</span>
+                    </span>
+                    <span className="text-[11px] text-zinc-500 font-normal">
+                      {changes.length} {changes.length === 1 ? 'change' : 'changes'} detected
+                    </span>
+                  </div>
+
+                  {changes.length > 0 ? (
+                    <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                      {changes.map((c, i) => (
+                        <div
+                          key={i}
+                          className="p-3 rounded-xl bg-[#13131c] border border-white/5 flex items-center justify-between text-xs gap-3"
+                        >
+                          <span className="text-zinc-400 font-medium shrink-0">{c.field}</span>
+                          <div className="flex items-center gap-2 text-right">
+                            <span className="line-through text-zinc-500 truncate max-w-[120px]">{c.from}</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                            <span className="font-semibold text-emerald-400 truncate max-w-[160px]">{c.to}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-[#13131c] border border-white/5 text-center text-xs text-zinc-400">
+                      <CheckCircle2 className="w-5 h-5 text-zinc-500 mx-auto mb-1.5" />
+                      <span>No attribute values were modified. Applying will keep current records intact.</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-orange-400" />
+                    <span>Confirm Catalog Registration</span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[#13131c] border border-white/5 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-zinc-500 text-[11px]">Product Name</span>
+                      <div className="font-semibold text-white">{name}</div>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 text-[11px]">SKU</span>
+                      <div className="font-mono font-semibold text-orange-300">{sku.toUpperCase()}</div>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 text-[11px]">Initial Stock</span>
+                      <div className="font-semibold text-emerald-400">{quantityOnHand || 0} units</div>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 text-[11px]">Selling Price</span>
+                      <div className="font-mono font-bold text-white">
+                        {sellingPrice ? `${getCurrencySymbol(currency)}${Number(sellingPrice).toFixed(2)}` : '—'}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 text-[11px]">Currency</span>
+                      <div className="font-medium text-zinc-300">{currency}</div>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 text-[11px]">Location</span>
+                      <div className="font-medium text-zinc-300">{locationType || 'Storefront'}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setModalStep(1)}
+                  disabled={isSubmitting}
+                  className="px-3 py-2 text-xs font-medium text-zinc-400 hover:text-white flex items-center gap-1 transition-colors disabled:opacity-50"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to Edit</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <GlowButton type="button" variant="secondary" size="md" onClick={onClose} disabled={isSubmitting}>
+                    Cancel
+                  </GlowButton>
+                  <GlowButton type="button" size="md" onClick={handleFinalApply} isLoading={isSubmitting}>
+                    <Check className="w-4 h-4 mr-1.5" />
+                    <span>{isEditMode ? 'Confirm & Apply Changes' : 'Confirm & Add to Catalog'}</span>
+                  </GlowButton>
+                </div>
+              </div>
+            </div>
+          )}
           </motion.div>
         </div>
       )}

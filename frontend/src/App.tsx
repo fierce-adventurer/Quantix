@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Layers } from 'lucide-react';
+import { Layers, Store, User, LogOut, Sun, Moon } from 'lucide-react';
 import { useAuth } from './context/auth-context';
 import { useTheme } from './context/theme-context';
 import { AuthHeader } from './components/auth/AuthHeader';
@@ -16,14 +16,12 @@ import { Product, CreateProductInput } from './types/product';
 import { api } from './lib/api';
 
 export const App: React.FC = () => {
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const { theme } = useTheme();
+  const { isAuthenticated, isLoading: isAuthLoading, user, tenant, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const isLight = theme === 'light';
 
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -127,94 +125,131 @@ export const App: React.FC = () => {
     }).length;
 
     return (
-      <div className={`min-h-screen flex relative selection:bg-[#ff6b00]/30 selection:text-white ${
+      <div className={`min-h-screen flex flex-col relative selection:bg-[#ff6b00]/30 selection:text-white ${
         isLight ? 'bg-[#fafafa] text-zinc-900' : 'bg-[#09090b] text-[#f4f4f5]'
       }`}>
-        <Sidebar
-          activeTab={activeTab}
-          onSelectTab={setActiveTab}
-          productCount={products.length}
-          lowStockCount={lowStockCount}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
-          isMobileOpen={isMobileOpen}
-          onCloseMobile={() => setIsMobileOpen(false)}
-        />
-
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen relative overflow-x-hidden">
-          <div className="glow-horizon" />
-          <div className="sunburst-crest" />
-
-          <header className={`lg:hidden flex items-center justify-between p-4 border-b relative z-20 ${
-            isLight ? 'bg-white/90 border-zinc-200' : 'bg-[#0d0d12]/90 border-white/10'
-          } backdrop-blur-md`}>
-            <button
-              onClick={() => setIsMobileOpen(true)}
-              className={`p-2 rounded-xl border ${
-                isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-700' : 'bg-white/5 border-white/10 text-white'
-              }`}
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#ff6b00] to-[#ffa500] p-0.5 flex items-center justify-center">
-                <div className={`w-full h-full rounded-[6px] flex items-center justify-center ${isLight ? 'bg-white' : 'bg-[#09090b]'}`}>
-                  <Layers className="w-3.5 h-3.5 text-[#ff7300]" />
+        <header className={`sticky top-0 z-40 w-full border-b backdrop-blur-xl transition-colors ${
+          isLight
+            ? 'bg-white/80 border-zinc-200/80 shadow-sm'
+            : 'bg-[#09090b]/80 border-white/10'
+        }`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b00] to-[#ffa500] p-0.5 shadow-glow-sm flex items-center justify-center">
+                <div className={`w-full h-full rounded-[10px] flex items-center justify-center ${isLight ? 'bg-white' : 'bg-[#09090b]'}`}>
+                  <Layers className="w-5 h-5 text-[#ff7300]" />
                 </div>
               </div>
-              <span className={`font-bold text-sm ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                Quantix
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-base font-black tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                  Quantix
+                </span>
+                {tenant && (
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border flex items-center gap-1.5 ${
+                    isLight
+                      ? 'bg-orange-50 text-orange-700 border-orange-200'
+                      : 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                  }`}>
+                    <Store className="w-3 h-3" />
+                    <span>{tenant.name}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="text-xs font-semibold text-orange-400 capitalize">
-              {activeTab}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-xl border transition-colors ${
+                  isLight
+                    ? 'bg-zinc-100 hover:bg-zinc-200 border-zinc-200 text-zinc-700'
+                    : 'bg-white/5 hover:bg-white/10 border-white/10 text-amber-400'
+                }`}
+                title={`Switch to ${isLight ? 'Obsidian Dark' : 'Obsidian Light'}`}
+              >
+                {isLight ? <Moon className="w-4 h-4 text-orange-500" /> : <Sun className="w-4 h-4 text-amber-400" />}
+              </button>
+
+              {user && (
+                <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs ${
+                  isLight ? 'bg-zinc-100 border-zinc-200 text-zinc-800' : 'bg-white/5 border-white/10 text-zinc-200'
+                }`}>
+                  <User className="w-3.5 h-3.5 text-orange-400" />
+                  <span className="font-medium">{user.email}</span>
+                  <span className="text-[10px] uppercase font-bold text-orange-400 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
+                    {user.role}
+                  </span>
+                </div>
+              )}
+
+              <button
+                onClick={logout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
             </div>
-          </header>
+          </div>
+        </header>
 
-          <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            {activeTab === 'dashboard' && (
-              <DashboardView
-                products={products}
-                isLoading={isLoadingProducts}
-                onRefresh={fetchProducts}
-                onAddProduct={() => {
-                  setEditingProduct(null);
-                  setIsModalOpen(true);
-                }}
-                onViewProductDetail={(product) => {
-                  setSelectedProduct(product);
-                  setIsDetailOpen(true);
-                }}
-                onNavigateToProducts={() => setActiveTab('products')}
-              />
-            )}
+        <div className="flex-1 flex relative">
+          <Sidebar
+            activeTab={activeTab}
+            onSelectTab={setActiveTab}
+            productCount={products.length}
+            lowStockCount={lowStockCount}
+          />
 
-            {activeTab === 'products' && (
-              <ProductCatalogView
-                products={products}
-                isLoading={isLoadingProducts}
-                onRefresh={fetchProducts}
-                onOpenCreate={() => {
-                  setEditingProduct(null);
-                  setIsModalOpen(true);
-                }}
-                onSelectProduct={(product) => {
-                  setSelectedProduct(product);
-                  setIsDetailOpen(true);
-                }}
-              />
-            )}
+          <div className="flex-1 flex flex-col min-w-0 relative overflow-x-hidden">
+            <div className="glow-horizon" />
+            <div className="sunburst-crest" />
 
-            {activeTab === 'settings' && (
-              <SettingsView
-                onSettingsUpdated={() => {
-                  fetchProducts();
-                }}
-              />
-            )}
-          </main>
+            <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:pl-28 pb-28 lg:pb-12">
+              {activeTab === 'dashboard' && (
+                <DashboardView
+                  products={products}
+                  isLoading={isLoadingProducts}
+                  onRefresh={fetchProducts}
+                  onAddProduct={() => {
+                    setEditingProduct(null);
+                    setIsModalOpen(true);
+                  }}
+                  onViewProductDetail={(product) => {
+                    setSelectedProduct(product);
+                    setIsDetailOpen(true);
+                  }}
+                  onNavigateToProducts={() => setActiveTab('products')}
+                />
+              )}
+
+              {activeTab === 'products' && (
+                <ProductCatalogView
+                  products={products}
+                  isLoading={isLoadingProducts}
+                  onRefresh={fetchProducts}
+                  onOpenCreate={() => {
+                    setEditingProduct(null);
+                    setIsModalOpen(true);
+                  }}
+                  onSelectProduct={(product) => {
+                    setSelectedProduct(product);
+                    setIsDetailOpen(true);
+                  }}
+                />
+              )}
+
+              {activeTab === 'settings' && (
+                <SettingsView
+                  onSettingsUpdated={() => {
+                    fetchProducts();
+                  }}
+                />
+              )}
+            </main>
+          </div>
         </div>
 
         <ProductModal

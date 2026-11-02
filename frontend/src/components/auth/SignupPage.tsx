@@ -87,7 +87,7 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
         className="relative z-10 w-full"
       >
         <div className="text-center mb-6">
-          <PillBadge tag="ZERO-LEAK" text="Dedicated Multi-Tenant Isolation" className="mb-3" />
+          <PillBadge tag="LIGHTNING-FAST" text="Zero Friction • Real-Time Inventory Velocity" className="mb-3" />
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
             Launch Your Store with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b00] to-[#ffa500]">Quantix</span>
           </h1>

@@ -10,7 +10,6 @@ import {
   RefreshCw,
   X,
   ChevronRight,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { Product, getCurrencySymbol, getStoredStoreCurrency } from '../../types/product';
 import { useTheme } from '../../context/theme-context';
@@ -195,10 +194,6 @@ export const ProductCatalogView: React.FC<ProductCatalogViewProps> = ({
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
-            </div>
-            <div className="text-[11px] text-zinc-500 hidden lg:flex items-center gap-1.5">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-              <span>Click any row to open product telemetry & manage stock</span>
             </div>
           </div>
 

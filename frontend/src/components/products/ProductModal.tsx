@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Package, Tag, Layers, AlertCircle, Compass, MapPin } from 'lucide-react';
+import { X, Package, Tag, Layers, AlertCircle, Compass, MapPin, Globe, DollarSign } from 'lucide-react';
 import {
   Product,
   CreateProductInput,
@@ -32,7 +32,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [costPrice, setCostPrice] = useState<number | ''>('');
   const [sellingPrice, setSellingPrice] = useState<number | ''>('');
   const [lowStockThreshold, setLowStockThreshold] = useState<number | ''>(5);
+  const [currencyMode, setCurrencyMode] = useState<'input' | 'location'>('input');
   const [currency, setCurrency] = useState('USD');
+  const [countryLocation, setCountryLocation] = useState('United States');
   const [locationType, setLocationType] = useState('Retail Storefront');
   const [detectedInfo, setDetectedInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setCostPrice(initialData.costPrice !== undefined ? initialData.costPrice : '');
       setSellingPrice(initialData.sellingPrice !== undefined ? initialData.sellingPrice : '');
       setLowStockThreshold(initialData.lowStockThreshold !== undefined ? initialData.lowStockThreshold : 5);
-      setCurrency(initialData.currency || 'USD');
+      const curr = initialData.currency || 'USD';
+      setCurrency(curr);
+      const matched = CURRENCY_OPTIONS.find((c) => c.code === curr);
+      setCountryLocation(matched ? matched.country : 'United States');
       setLocationType(initialData.locationType || 'Retail Storefront');
     } else {
       setName('');
@@ -60,17 +65,35 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setSellingPrice('');
       setLowStockThreshold(5);
       setCurrency('USD');
+      setCountryLocation('United States');
       setLocationType('Retail Storefront');
     }
     setDetectedInfo(null);
     setError(null);
   }, [initialData, isOpen]);
 
+  const handleCurrencyChange = (newCurrency: string) => {
+    setCurrency(newCurrency);
+    const matched = CURRENCY_OPTIONS.find((c) => c.code === newCurrency);
+    if (matched) {
+      setCountryLocation(matched.country);
+    }
+  };
+
+  const handleCountryChange = (countryName: string) => {
+    setCountryLocation(countryName);
+    const matched = CURRENCY_OPTIONS.find((c) => c.country === countryName);
+    if (matched) {
+      setCurrency(matched.code);
+    }
+  };
+
   const handleDetectLocation = () => {
     const detected = detectLocationCurrency();
+    setCountryLocation(detected.country);
     setCurrency(detected.currency);
-    setDetectedInfo(`Selected ${detected.country} (${detected.currency})`);
-    setTimeout(() => setDetectedInfo(null), 3000);
+    setDetectedInfo(`Detected: ${detected.country} (${detected.currency})`);
+    setTimeout(() => setDetectedInfo(null), 3500);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -206,67 +229,160 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
-                      Currency *
-                    </label>
+              <div className="p-3.5 rounded-2xl bg-[#13131c] border border-white/5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>Currency & Location Mode</span>
+                  </div>
+                  <div className="flex items-center p-0.5 rounded-xl bg-black/40 border border-white/5 text-[11px]">
                     <button
                       type="button"
-                      onClick={handleDetectLocation}
-                      className="text-[10px] text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20"
-                      title="Auto-detect currency from your location"
+                      onClick={() => setCurrencyMode('input')}
+                      className={`px-2.5 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+                        currencyMode === 'input'
+                          ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
                     >
-                      <Compass className="w-3 h-3" />
-                      <span>Detect Location</span>
+                      <DollarSign className="w-3 h-3" />
+                      <span>Input Currency</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrencyMode('location')}
+                      className={`px-2.5 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+                        currencyMode === 'location'
+                          ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Globe className="w-3 h-3" />
+                      <span>Set by Location</span>
                     </button>
                   </div>
-                  <div className="relative">
-                    <select
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full rounded-xl bg-[#13131a] border border-white/10 px-3.5 py-2 text-sm text-zinc-100 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20 appearance-none cursor-pointer"
-                    >
-                      {CURRENCY_OPTIONS.map((c) => (
-                        <option key={c.code} value={c.code} className="bg-[#14141c] text-white">
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-orange-400 text-xs font-mono font-bold">
-                      {getCurrencySymbol(currency)}
-                    </div>
-                  </div>
-                  {detectedInfo && (
-                    <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      {detectedInfo}
-                    </span>
-                  )}
                 </div>
 
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
-                    Storage / Location Type
-                  </label>
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      list="location-options"
-                      value={locationType}
-                      onChange={(e) => setLocationType(e.target.value)}
-                      placeholder="e.g. Retail Storefront, Warehouse"
-                      className="w-full rounded-xl bg-[#13131a] border border-white/10 pl-10 pr-3.5 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20"
-                    />
-                    <datalist id="location-options">
-                      {LOCATION_TYPE_OPTIONS.map((loc) => (
-                        <option key={loc} value={loc} />
-                      ))}
-                    </datalist>
+                {currencyMode === 'input' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
+                        Currency Type *
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={currency}
+                          onChange={(e) => handleCurrencyChange(e.target.value)}
+                          className="w-full rounded-xl bg-[#13131a] border border-white/10 px-3.5 py-2 text-sm text-zinc-100 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20 appearance-none cursor-pointer"
+                        >
+                          {CURRENCY_OPTIONS.map((c) => (
+                            <option key={c.code} value={c.code} className="bg-[#14141c] text-white">
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-orange-400 text-xs font-mono font-bold">
+                          {getCurrencySymbol(currency)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
+                        Storage / Location Type
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          list="location-options-direct"
+                          value={locationType}
+                          onChange={(e) => setLocationType(e.target.value)}
+                          placeholder="e.g. Retail Storefront, Warehouse"
+                          className="w-full rounded-xl bg-[#13131a] border border-white/10 pl-10 pr-3.5 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20"
+                        />
+                        <datalist id="location-options-direct">
+                          {LOCATION_TYPE_OPTIONS.map((loc) => (
+                            <option key={loc} value={loc} />
+                          ))}
+                        </datalist>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
+                            Country / Location *
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleDetectLocation}
+                            className="text-[10px] text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20"
+                          >
+                            <Compass className="w-3 h-3" />
+                            <span>Auto-Detect</span>
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <select
+                            value={countryLocation}
+                            onChange={(e) => handleCountryChange(e.target.value)}
+                            className="w-full rounded-xl bg-[#13131a] border border-white/10 px-3.5 py-2 text-sm text-zinc-100 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20 appearance-none cursor-pointer"
+                          >
+                            {CURRENCY_OPTIONS.map((c) => (
+                              <option key={c.country} value={c.country} className="bg-[#14141c] text-white">
+                                {c.country} ({c.code} - {c.symbol})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
+                          Storage Location Type *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            list="location-options-loc"
+                            value={locationType}
+                            onChange={(e) => setLocationType(e.target.value)}
+                            placeholder="e.g. Retail Storefront, Warehouse"
+                            className="w-full rounded-xl bg-[#13131a] border border-white/10 pl-10 pr-3.5 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20"
+                          />
+                          <datalist id="location-options-loc">
+                            {LOCATION_TYPE_OPTIONS.map((loc) => (
+                              <option key={loc} value={loc} />
+                            ))}
+                          </datalist>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-orange-500/5 border border-orange-500/15 flex items-center justify-between text-xs">
+                      <span className="text-zinc-400">
+                        Mapped Currency for <span className="font-semibold text-white">{countryLocation}</span>:
+                      </span>
+                      <span className="font-mono font-bold text-orange-400 flex items-center gap-1.5">
+                        <span>{currency}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-[11px]">
+                          {getCurrencySymbol(currency)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {detectedInfo && (
+                  <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {detectedInfo}
+                  </span>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

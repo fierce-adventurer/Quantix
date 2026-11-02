@@ -11,6 +11,7 @@ import com.quantix.modules.auth.repository.TenantRepository;
 import com.quantix.modules.auth.repository.UserRepository;
 import com.quantix.modules.auth.security.LoginCircuitBreaker;
 import com.quantix.shared.exception.ApiException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final TenantRepository tenantRepository;
@@ -27,20 +29,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final LoginCircuitBreaker circuitBreaker;
-
-    public AuthService(
-            TenantRepository tenantRepository,
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService,
-            LoginCircuitBreaker circuitBreaker
-    ) {
-        this.tenantRepository = tenantRepository;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.circuitBreaker = circuitBreaker;
-    }
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {

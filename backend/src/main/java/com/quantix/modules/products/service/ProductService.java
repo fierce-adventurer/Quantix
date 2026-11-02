@@ -6,6 +6,7 @@ import com.quantix.modules.products.dto.UpdateProductRequest;
 import com.quantix.modules.products.entity.Product;
 import com.quantix.modules.products.repository.ProductRepository;
 import com.quantix.shared.exception.ApiException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,15 +15,12 @@ import java.util.List;
 import java.util.Locale;
 
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
     private static final int DEFAULT_LOW_STOCK_THRESHOLD = 5;
 
     private final ProductRepository productRepository;
-
-    public ProductService(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
 
     @Transactional(readOnly = true)
     public List<ProductResponse> getProducts(String tenantId, String search) {

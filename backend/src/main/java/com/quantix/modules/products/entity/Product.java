@@ -8,11 +8,21 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(
     name = "products",
@@ -41,6 +51,7 @@ public class Product {
     @Column(length = 1000)
     private String description;
 
+    @Builder.Default
     @Column(name = "quantity_on_hand", nullable = false)
     private Integer quantityOnHand = 0;
 
@@ -53,6 +64,7 @@ public class Product {
     @Column(name = "low_stock_threshold")
     private Integer lowStockThreshold;
 
+    @Builder.Default
     @Column(name = "currency", length = 10)
     private String currency = "USD";
 
@@ -64,8 +76,6 @@ public class Product {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    public Product() {}
 
     public Product(
             String tenantId,
@@ -115,99 +125,11 @@ public class Product {
         }
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getTenantId() {
-        return tenantId;
-    }
-
-    public void setTenantId(String tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getSku() {
-        return sku;
-    }
-
-    public void setSku(String sku) {
-        this.sku = sku;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Integer getQuantityOnHand() {
-        return quantityOnHand;
-    }
-
-    public void setQuantityOnHand(Integer quantityOnHand) {
-        this.quantityOnHand = quantityOnHand != null ? quantityOnHand : 0;
-    }
-
-    public BigDecimal getCostPrice() {
-        return costPrice;
-    }
-
-    public void setCostPrice(BigDecimal costPrice) {
-        this.costPrice = costPrice;
-    }
-
-    public BigDecimal getSellingPrice() {
-        return sellingPrice;
-    }
-
-    public void setSellingPrice(BigDecimal sellingPrice) {
-        this.sellingPrice = sellingPrice;
-    }
-
-    public Integer getLowStockThreshold() {
-        return lowStockThreshold;
-    }
-
-    public void setLowStockThreshold(Integer lowStockThreshold) {
-        this.lowStockThreshold = lowStockThreshold;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
     public void setCurrency(String currency) {
         this.currency = (currency != null && !currency.isBlank()) ? currency.trim().toUpperCase() : "USD";
     }
 
-    public String getLocationType() {
-        return locationType;
-    }
-
     public void setLocationType(String locationType) {
         this.locationType = locationType != null ? locationType.trim() : null;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
     }
 }

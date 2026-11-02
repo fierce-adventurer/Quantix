@@ -2,6 +2,7 @@ package com.quantix.modules.auth.controller;
 
 import com.quantix.modules.auth.repository.TenantRepository;
 import com.quantix.shared.dto.ApiResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,13 +14,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class HealthController {
 
     private final TenantRepository tenantRepository;
-
-    public HealthController(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
-    }
 
     @GetMapping("/health")
     public ResponseEntity<ApiResponse<Map<String, Object>>> health() {

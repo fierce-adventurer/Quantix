@@ -3,6 +3,7 @@ package com.quantix.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quantix.shared.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,15 +25,11 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final ObjectMapper objectMapper;
-
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, ObjectMapper objectMapper) {
-        this.jwtAuthFilter = jwtAuthFilter;
-        this.objectMapper = objectMapper;
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {

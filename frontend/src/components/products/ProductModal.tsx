@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Package, Tag, DollarSign, Layers, AlertCircle } from 'lucide-react';
-import { Product, CreateProductInput } from '../../types/product';
+import { X, Package, Tag, Layers, AlertCircle, Compass, MapPin } from 'lucide-react';
+import {
+  Product,
+  CreateProductInput,
+  CURRENCY_OPTIONS,
+  LOCATION_TYPE_OPTIONS,
+  getCurrencySymbol,
+  detectLocationCurrency,
+} from '../../types/product';
 import { GlassInput } from '../ui/GlassInput';
 import { GlowButton } from '../ui/GlowButton';
 
@@ -25,6 +32,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   const [costPrice, setCostPrice] = useState<number | ''>('');
   const [sellingPrice, setSellingPrice] = useState<number | ''>('');
   const [lowStockThreshold, setLowStockThreshold] = useState<number | ''>(5);
+  const [currency, setCurrency] = useState('USD');
+  const [locationType, setLocationType] = useState('Retail Storefront');
+  const [detectedInfo, setDetectedInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,6 +49,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setCostPrice(initialData.costPrice !== undefined ? initialData.costPrice : '');
       setSellingPrice(initialData.sellingPrice !== undefined ? initialData.sellingPrice : '');
       setLowStockThreshold(initialData.lowStockThreshold !== undefined ? initialData.lowStockThreshold : 5);
+      setCurrency(initialData.currency || 'USD');
+      setLocationType(initialData.locationType || 'Retail Storefront');
     } else {
       setName('');
       setSku('');
@@ -47,9 +59,19 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       setCostPrice('');
       setSellingPrice('');
       setLowStockThreshold(5);
+      setCurrency('USD');
+      setLocationType('Retail Storefront');
     }
+    setDetectedInfo(null);
     setError(null);
   }, [initialData, isOpen]);
+
+  const handleDetectLocation = () => {
+    const detected = detectLocationCurrency();
+    setCurrency(detected.currency);
+    setDetectedInfo(`Selected ${detected.country} (${detected.currency})`);
+    setTimeout(() => setDetectedInfo(null), 3000);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +99,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
       costPrice: typeof costPrice === 'number' ? costPrice : undefined,
       sellingPrice: typeof sellingPrice === 'number' ? sellingPrice : undefined,
       lowStockThreshold: typeof lowStockThreshold === 'number' ? lowStockThreshold : 5,
+      currency: currency.trim() || 'USD',
+      locationType: locationType.trim() || undefined,
     };
 
     setIsSubmitting(true);
@@ -182,6 +206,69 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
+                      Currency *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleDetectLocation}
+                      className="text-[10px] text-orange-400 hover:text-orange-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20"
+                      title="Auto-detect currency from your location"
+                    >
+                      <Compass className="w-3 h-3" />
+                      <span>Detect Location</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full rounded-xl bg-[#13131a] border border-white/10 px-3.5 py-2 text-sm text-zinc-100 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20 appearance-none cursor-pointer"
+                    >
+                      {CURRENCY_OPTIONS.map((c) => (
+                        <option key={c.code} value={c.code} className="bg-[#14141c] text-white">
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-orange-400 text-xs font-mono font-bold">
+                      {getCurrencySymbol(currency)}
+                    </div>
+                  </div>
+                  {detectedInfo && (
+                    <span className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      {detectedInfo}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-medium text-zinc-300 tracking-wide">
+                    Storage / Location Type
+                  </label>
+                  <div className="relative">
+                    <MapPin className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      list="location-options"
+                      value={locationType}
+                      onChange={(e) => setLocationType(e.target.value)}
+                      placeholder="e.g. Retail Storefront, Warehouse"
+                      className="w-full rounded-xl bg-[#13131a] border border-white/10 pl-10 pr-3.5 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-[#ff6b00] focus:ring-2 focus:ring-[#ff6b00]/20"
+                    />
+                    <datalist id="location-options">
+                      {LOCATION_TYPE_OPTIONS.map((loc) => (
+                        <option key={loc} value={loc} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <GlassInput
                   compact
@@ -199,7 +286,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
                 <GlassInput
                   compact
-                  label="Cost Price ($)"
+                  label={`Cost Price (${getCurrencySymbol(currency)})`}
                   type="number"
                   step="0.01"
                   min="0"
@@ -208,12 +295,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   onChange={(e) =>
                     setCostPrice(e.target.value === '' ? '' : parseFloat(e.target.value))
                   }
-                  icon={<DollarSign className="w-4 h-4" />}
+                  icon={<span className="text-xs font-mono font-bold text-orange-400">{getCurrencySymbol(currency)}</span>}
                 />
 
                 <GlassInput
                   compact
-                  label="Selling Price ($)"
+                  label={`Selling Price (${getCurrencySymbol(currency)})`}
                   type="number"
                   step="0.01"
                   min="0"
@@ -222,7 +309,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   onChange={(e) =>
                     setSellingPrice(e.target.value === '' ? '' : parseFloat(e.target.value))
                   }
-                  icon={<DollarSign className="w-4 h-4" />}
+                  icon={<span className="text-xs font-mono font-bold text-orange-400">{getCurrencySymbol(currency)}</span>}
                 />
               </div>
 

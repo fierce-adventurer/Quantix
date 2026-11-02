@@ -28,5 +28,11 @@ public record CreateProductRequest(
     BigDecimal sellingPrice,
 
     @Min(value = 0, message = "Low stock threshold cannot be negative")
-    Integer lowStockThreshold
+    Integer lowStockThreshold,
+
+    @Size(max = 10, message = "Currency code must not exceed 10 characters")
+    String currency,
+
+    @Size(max = 100, message = "Location type must not exceed 100 characters")
+    String locationType
 ) {}

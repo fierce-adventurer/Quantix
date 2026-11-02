@@ -61,7 +61,9 @@ class ProductIntegrationTest {
                 45,
                 new BigDecimal("65.00"),
                 new BigDecimal("120.00"),
-                10
+                10,
+                "INR",
+                "Main Warehouse"
         );
 
         String createResponse = mockMvc.perform(post("/api/products")
@@ -72,6 +74,8 @@ class ProductIntegrationTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.name").value("Mechanical Keyboard"))
                 .andExpect(jsonPath("$.data.sku").value("KEY-MECH-01"))
+                .andExpect(jsonPath("$.data.currency").value("INR"))
+                .andExpect(jsonPath("$.data.locationType").value("Main Warehouse"))
                 .andExpect(jsonPath("$.data.isLowStock").value(false))
                 .andReturn().getResponse().getContentAsString();
 
@@ -104,7 +108,9 @@ class ProductIntegrationTest {
                 4,
                 new BigDecimal("70.00"),
                 new BigDecimal("140.00"),
-                10
+                10,
+                "USD",
+                "Retail Floor"
         );
 
         mockMvc.perform(put("/api/products/" + productId)
@@ -113,6 +119,8 @@ class ProductIntegrationTest {
                         .content(objectMapper.writeValueAsString(updateProd)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.name").value("Mechanical Keyboard Pro"))
+                .andExpect(jsonPath("$.data.currency").value("USD"))
+                .andExpect(jsonPath("$.data.locationType").value("Retail Floor"))
                 .andExpect(jsonPath("$.data.isLowStock").value(true));
 
         mockMvc.perform(delete("/api/products/" + productId)

@@ -61,7 +61,9 @@ public class ProductService {
                 request.quantityOnHand() != null ? request.quantityOnHand() : 0,
                 request.costPrice(),
                 request.sellingPrice(),
-                request.lowStockThreshold()
+                request.lowStockThreshold(),
+                request.currency(),
+                request.locationType()
         );
 
         product = productRepository.save(product);
@@ -86,6 +88,12 @@ public class ProductService {
         product.setCostPrice(request.costPrice());
         product.setSellingPrice(request.sellingPrice());
         product.setLowStockThreshold(request.lowStockThreshold());
+        if (request.currency() != null && !request.currency().isBlank()) {
+            product.setCurrency(request.currency());
+        }
+        if (request.locationType() != null) {
+            product.setLocationType(request.locationType());
+        }
 
         product = productRepository.save(product);
         return toResponse(product);
@@ -115,6 +123,8 @@ public class ProductService {
                 product.getSellingPrice(),
                 product.getLowStockThreshold(),
                 isLowStock,
+                product.getCurrency(),
+                product.getLocationType(),
                 product.getCreatedAt(),
                 product.getUpdatedAt()
         );

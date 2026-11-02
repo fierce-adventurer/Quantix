@@ -53,6 +53,12 @@ public class Product {
     @Column(name = "low_stock_threshold")
     private Integer lowStockThreshold;
 
+    @Column(name = "currency", length = 10)
+    private String currency = "USD";
+
+    @Column(name = "location_type", length = 100)
+    private String locationType;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -69,7 +75,9 @@ public class Product {
             Integer quantityOnHand,
             BigDecimal costPrice,
             BigDecimal sellingPrice,
-            Integer lowStockThreshold
+            Integer lowStockThreshold,
+            String currency,
+            String locationType
     ) {
         this.tenantId = tenantId;
         this.name = name;
@@ -79,6 +87,8 @@ public class Product {
         this.costPrice = costPrice;
         this.sellingPrice = sellingPrice;
         this.lowStockThreshold = lowStockThreshold;
+        this.currency = (currency != null && !currency.isBlank()) ? currency.trim().toUpperCase() : "USD";
+        this.locationType = locationType != null ? locationType.trim() : null;
     }
 
     @PrePersist
@@ -92,11 +102,17 @@ public class Product {
         if (this.quantityOnHand == null) {
             this.quantityOnHand = 0;
         }
+        if (this.currency == null || this.currency.isBlank()) {
+            this.currency = "USD";
+        }
     }
 
     @PreUpdate
     public void onPreUpdate() {
         this.updatedAt = Instant.now();
+        if (this.currency == null || this.currency.isBlank()) {
+            this.currency = "USD";
+        }
     }
 
     public String getId() {
@@ -169,6 +185,22 @@ public class Product {
 
     public void setLowStockThreshold(Integer lowStockThreshold) {
         this.lowStockThreshold = lowStockThreshold;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = (currency != null && !currency.isBlank()) ? currency.trim().toUpperCase() : "USD";
+    }
+
+    public String getLocationType() {
+        return locationType;
+    }
+
+    public void setLocationType(String locationType) {
+        this.locationType = locationType != null ? locationType.trim() : null;
     }
 
     public Instant getCreatedAt() {

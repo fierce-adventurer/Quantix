@@ -14,6 +14,8 @@ public record ProductResponse(
     BigDecimal sellingPrice,
     Integer lowStockThreshold,
     boolean isLowStock,
+    String currency,
+    String locationType,
     Instant createdAt,
     Instant updatedAt
 ) {}

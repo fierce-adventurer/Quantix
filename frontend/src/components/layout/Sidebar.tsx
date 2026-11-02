@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Package, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, History, Settings } from 'lucide-react';
 import { useTheme } from '../../context/theme-context';
 
-export type NavigationTab = 'dashboard' | 'products' | 'settings';
+export type NavigationTab = 'dashboard' | 'products' | 'history' | 'settings';
 
 export interface SidebarProps {
   activeTab: NavigationTab;
@@ -34,6 +34,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Products & Catalog',
       icon: <Package className="w-5 h-5" />,
       badge: productCount > 0 ? productCount : undefined,
+    },
+    {
+      id: 'history',
+      label: 'Product History',
+      icon: <History className="w-5 h-5" />,
     },
     {
       id: 'settings',

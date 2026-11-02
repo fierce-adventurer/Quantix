@@ -57,15 +57,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return acc + (p.quantityOnHand || 0) * price;
   }, 0);
 
+  const toTitleCase = (str: string): string => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .split(/\s+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const formattedStoreName = tenant?.name ? toTitleCase(tenant.name) : '';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-            {tenant?.name ? `${tenant.name} Dashboard` : 'Store Dashboard'}
+            {formattedStoreName ? `${formattedStoreName} Dashboard` : 'Store Dashboard'}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Real-time stock velocity, catalog telemetry, and low-inventory monitors for {tenant?.name || 'your store'}.
+            Real-time stock velocity, catalog telemetry, and low-inventory monitors for {formattedStoreName || 'your store'}.
           </p>
         </div>
 

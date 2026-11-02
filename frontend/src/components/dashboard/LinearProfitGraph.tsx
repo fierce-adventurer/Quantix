@@ -1,32 +1,61 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, DollarSign, Percent, ArrowUpRight, ShieldCheck } from 'lucide-react';
-import { Product, getCurrencySymbol, getStoredStoreCurrency } from '../../types/product';
+import { TrendingUp, ArrowUpRight, Clock } from 'lucide-react';
+import { Product, StockMovement, getCurrencySymbol, getStoredStoreCurrency } from '../../types/product';
 import { useTheme } from '../../context/theme-context';
+import { api } from '../../lib/api';
 
 interface LinearProfitGraphProps {
   products: Product[];
+  movements?: StockMovement[];
 }
 
 type TimeRange = '7D' | '30D' | 'QTD' | 'ALL';
 
 interface ProfitPoint {
   label: string;
+  dateStr: string;
   profit: number;
   revenue: number;
   cost: number;
   margin: number;
 }
 
-export const LinearProfitGraph: React.FC<LinearProfitGraphProps> = ({ products }) => {
+export const LinearProfitGraph: React.FC<LinearProfitGraphProps> = ({
+  products,
+  movements: initialMovements,
+}) => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const currency = getStoredStoreCurrency();
   const symbol = getCurrencySymbol(currency);
 
-  const [timeRange, setTimeRange] = useState<TimeRange>('30D');
+  const [timeRange, setTimeRange] = useState<TimeRange>('7D');
   const [hoveredPoint, setHoveredPoint] = useState<ProfitPoint | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+
+  const [allMovements, setAllMovements] = useState<StockMovement[]>(initialMovements || []);
+
+  useEffect(() => {
+    if (initialMovements && initialMovements.length > 0) {
+      setAllMovements(initialMovements);
+      return;
+    }
+
+    let isMounted = true;
+    api
+      .get<StockMovement[]>('/api/products/movements')
+      .then((res) => {
+        if (isMounted && res.data) {
+          setAllMovements(res.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialMovements, products]);
 
   const stats = useMemo(() => {
     let totalRevenue = 0;
@@ -58,75 +87,137 @@ export const LinearProfitGraph: React.FC<LinearProfitGraphProps> = ({ products }
   }, [products]);
 
   const points: ProfitPoint[] = useMemo(() => {
-    const baseProfit = stats.netProfit;
-    const baseRevenue = stats.totalRevenue;
-    const baseCost = stats.totalCost;
+    if (products.length === 0) {
+      return [];
+    }
+
+    const now = new Date();
+    const timestamps: { date: Date; label: string }[] = [];
 
     if (timeRange === '7D') {
-      const multipliers = [0.65, 0.72, 0.78, 0.85, 0.91, 0.96, 1.0];
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      return multipliers.map((m, i) => {
-        const profit = baseProfit * m;
-        const revenue = baseRevenue * m;
-        const cost = baseCost * m;
-        return {
-          label: days[i],
-          profit,
-          revenue,
-          cost,
-          margin: revenue > 0 ? (profit / revenue) * 100 : 0,
-        };
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        if (i > 0) {
+          d.setHours(23, 59, 59, 999);
+        }
+        const label =
+          i === 0
+            ? 'Today'
+            : d.toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' });
+        timestamps.push({ date: d, label });
+      }
+    } else if (timeRange === '30D') {
+      const stepDays = 5;
+      for (let i = 30; i >= 0; i -= stepDays) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        if (i > 0) {
+          d.setHours(23, 59, 59, 999);
+        }
+        const label =
+          i === 0
+            ? 'Today'
+            : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        timestamps.push({ date: d, label });
+      }
+    } else if (timeRange === 'QTD') {
+      const currentMonth = now.getMonth();
+      const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
+      const quarterStartDate = new Date(now.getFullYear(), quarterStartMonth, 1);
+      const totalDays = Math.max(
+        1,
+        Math.round((now.getTime() - quarterStartDate.getTime()) / (1000 * 60 * 60 * 24))
+      );
+      const count = Math.min(7, totalDays);
+      const step = totalDays / (count || 1);
+
+      for (let i = 0; i < count; i++) {
+        const d = new Date(quarterStartDate);
+        d.setDate(d.getDate() + Math.round(i * step));
+        d.setHours(23, 59, 59, 999);
+        const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        timestamps.push({ date: d, label });
+      }
+      timestamps.push({
+        date: now,
+        label: 'Today',
       });
+    } else {
+      let earliestTime = now.getTime();
+      for (const p of products) {
+        if (p.createdAt) {
+          const t = new Date(p.createdAt).getTime();
+          if (t < earliestTime) earliestTime = t;
+        }
+      }
+      for (const m of allMovements) {
+        if (m.createdAt) {
+          const t = new Date(m.createdAt).getTime();
+          if (t < earliestTime) earliestTime = t;
+        }
+      }
+
+      const totalSpan = now.getTime() - earliestTime;
+      const daysSpan = Math.max(1, Math.round(totalSpan / (1000 * 60 * 60 * 24)));
+      const steps = Math.min(7, daysSpan);
+
+      for (let i = 0; i <= steps; i++) {
+        const t = new Date(earliestTime + (i / steps) * totalSpan);
+        const label =
+          i === steps
+            ? 'Today'
+            : t.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        timestamps.push({ date: t, label });
+      }
     }
 
-    if (timeRange === '30D') {
-      const multipliers = [0.48, 0.55, 0.62, 0.70, 0.79, 0.86, 0.93, 1.0];
-      return multipliers.map((m, i) => {
-        const profit = baseProfit * m;
-        const revenue = baseRevenue * m;
-        const cost = baseCost * m;
-        return {
-          label: `Wk ${Math.floor(i / 2) + 1}.${(i % 2) + 1}`,
-          profit,
-          revenue,
-          cost,
-          margin: revenue > 0 ? (profit / revenue) * 100 : 0,
-        };
-      });
-    }
+    return timestamps.map(({ date, label }) => {
+      const targetTime = date.getTime();
+      let pointRevenue = 0;
+      let pointCost = 0;
 
-    if (timeRange === 'QTD') {
-      const months = ['Month 1', 'Month 2', 'Month 3'];
-      const multipliers = [0.45, 0.74, 1.0];
-      return multipliers.map((m, i) => {
-        const profit = baseProfit * m;
-        const revenue = baseRevenue * m;
-        const cost = baseCost * m;
-        return {
-          label: months[i],
-          profit,
-          revenue,
-          cost,
-          margin: revenue > 0 ? (profit / revenue) * 100 : 0,
-        };
-      });
-    }
+      for (const product of products) {
+        const createdAt = product.createdAt ? new Date(product.createdAt).getTime() : 0;
+        if (createdAt > targetTime) {
+          continue;
+        }
 
-    const periods = ['Q1', 'Q2', 'Q3', 'Q4'];
-    const multipliers = [0.35, 0.58, 0.82, 1.0];
-    return multipliers.map((m, i) => {
-      const profit = baseProfit * m;
-      const revenue = baseRevenue * m;
-      const cost = baseCost * m;
+        let qtyAtTime = product.quantityOnHand || 0;
+        for (const m of allMovements) {
+          if (m.productId === product.id && m.createdAt) {
+            const moveTime = new Date(m.createdAt).getTime();
+            if (moveTime > targetTime) {
+              qtyAtTime -= m.quantityDelta;
+            }
+          }
+        }
+
+        const validQty = Math.max(0, qtyAtTime);
+        const sell = product.sellingPrice !== undefined ? Number(product.sellingPrice) : 0;
+        const cost = product.costPrice !== undefined ? Number(product.costPrice) : 0;
+
+        pointRevenue += sell * validQty;
+        pointCost += cost * validQty;
+      }
+
+      const profit = Math.max(0, pointRevenue - pointCost);
+      const margin = pointRevenue > 0 ? (profit / pointRevenue) * 100 : 0;
+
       return {
-        label: periods[i],
+        label,
+        dateStr: date.toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
         profit,
-        revenue,
-        cost,
-        margin: revenue > 0 ? (profit / revenue) * 100 : 0,
+        revenue: pointRevenue,
+        cost: pointCost,
+        margin,
       };
     });
-  }, [stats, timeRange]);
+  }, [products, allMovements, timeRange]);
 
   const width = 800;
   const height = 220;
@@ -138,156 +229,216 @@ export const LinearProfitGraph: React.FC<LinearProfitGraphProps> = ({ products }
   const range = maxVal - minVal || 1;
 
   const coords = points.map((p, idx) => {
-    const x = paddingX + (idx / (points.length - 1)) * (width - paddingX * 2);
+    const x =
+      points.length > 1
+        ? paddingX + (idx / (points.length - 1)) * (width - paddingX * 2)
+        : width / 2;
     const y = height - paddingY - ((p.profit - minVal) / range) * (height - paddingY * 2);
     return { x, y, point: p };
   });
 
-  const pathD = coords.reduce((acc, curr, idx, arr) => {
-    if (idx === 0) return `M ${curr.x} ${curr.y}`;
-    const prev = arr[idx - 1];
-    const cp1x = prev.x + (curr.x - prev.x) / 2;
-    const cp1y = prev.y;
-    const cp2x = prev.x + (curr.x - prev.x) / 2;
-    const cp2y = curr.y;
-    return `${acc} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`;
-  }, '');
+  const pathD = useMemo(() => {
+    if (coords.length === 0) return '';
+    if (coords.length === 1) {
+      return `M ${paddingX} ${coords[0].y} L ${width - paddingX} ${coords[0].y}`;
+    }
 
-  const areaD = coords.length > 0
-    ? `${pathD} L ${coords[coords.length - 1].x} ${height - paddingY} L ${coords[0].x} ${height - paddingY} Z`
-    : '';
+    let d = `M ${coords[0].x} ${coords[0].y}`;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const p0 = coords[i === 0 ? 0 : i - 1];
+      const p1 = coords[i];
+      const p2 = coords[i + 1];
+      const p3 = coords[i + 2] || p2;
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+  }, [coords]);
+
+  const areaD = useMemo(() => {
+    if (!pathD || coords.length === 0) return '';
+    const bottom = height - paddingY;
+    const firstX = coords[0].x;
+    const lastX = coords[coords.length - 1].x;
+    return `${pathD} L ${lastX} ${bottom} L ${firstX} ${bottom} Z`;
+  }, [pathD, coords]);
+
+  if (products.length === 0) {
+    return (
+      <div
+        className={`relative overflow-hidden rounded-3xl border p-8 backdrop-blur-2xl transition-all ${
+          isLight
+            ? 'bg-gradient-to-br from-white via-orange-50/20 to-white border-orange-200/60 shadow-lg shadow-orange-500/5'
+            : 'bg-gradient-to-br from-[#0f0f15]/90 via-[#14141d]/80 to-[#0a0a0f] border-orange-500/15 shadow-2xl shadow-orange-500/5'
+        }`}
+      >
+        <div className="flex flex-col items-center justify-center text-center py-6">
+          <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#ff6b00] mb-3">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <h3 className={`text-base font-bold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+            Live Profit Curve Awaiting Products
+          </h3>
+          <p className="text-xs text-zinc-400 max-w-sm mt-1">
+            Add your inventory items to activate real-time profit tracking, margins, and linear velocity curves.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
-      className={`p-5 sm:p-6 rounded-3xl border transition-all relative overflow-hidden ${
+      className={`relative overflow-hidden rounded-3xl border p-6 sm:p-7 backdrop-blur-2xl transition-all ${
         isLight
-          ? 'bg-white border-zinc-200 shadow-sm'
-          : 'bg-[#121219] border-white/10'
+          ? 'bg-gradient-to-br from-white via-orange-50/30 to-white border-orange-200/80 shadow-xl shadow-orange-500/10'
+          : 'bg-gradient-to-br from-[#0e0e14]/95 via-[#13131c]/90 to-[#09090d] border-orange-500/20 shadow-2xl shadow-orange-500/10'
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="absolute top-0 right-0 w-96 h-64 bg-gradient-to-bl from-[#ff6b00]/10 via-[#ffa500]/5 to-transparent blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-white/5">
         <div>
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-              isLight
-                ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                : 'bg-orange-500/15 text-orange-400 border border-orange-500/30'
-            }`}>
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <h2 className={`text-base sm:text-lg font-bold tracking-tight ${
-              isLight ? 'text-zinc-900' : 'text-white'
-            }`}>
-              Profit Telemetry & Margin Velocity
-            </h2>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-gradient-to-r from-[#ff4500]/15 to-[#ffa500]/15 border border-orange-500/30 text-[#ff6b00]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ff6b00] animate-pulse" />
+              Real Time-Based Profit Telemetry
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] text-zinc-400">
+              <Clock className="w-3 h-3 text-[#ff6b00]" />
+              Historical Audit Calibrated
+            </span>
           </div>
-          <p className={`text-xs mt-1 ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-            Calculated from catalog selling prices, unit cost basis, and current on-hand units.
+
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h2 className={`text-3xl sm:text-4xl font-black tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+              {symbol}
+              {stats.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </h2>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+              <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>{stats.marginPct.toFixed(1)}% Gross Margin</span>
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-400 mt-1">
+            Calculated strictly from store product valuations and stock movement audit records.
           </p>
         </div>
 
-        <div className={`flex items-center p-1 rounded-xl border text-xs font-semibold ${
-          isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-[#181824] border-white/10'
-        }`}>
-          {(['7D', '30D', 'QTD', 'ALL'] as TimeRange[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => {
-                setTimeRange(r);
-                setHoveredPoint(null);
-              }}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                timeRange === r
-                  ? 'bg-gradient-to-r from-[#ff6b00] to-[#ffa500] text-white shadow-md shadow-orange-500/30'
-                  : isLight
-                  ? 'text-zinc-600 hover:text-zinc-900'
-                  : 'text-zinc-400 hover:text-white'
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <div
+              className={`px-3 py-2 rounded-xl border ${
+                isLight ? 'bg-white border-zinc-200' : 'bg-white/5 border-white/10'
               }`}
             >
-              {r}
-            </button>
-          ))}
+              <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">
+                Gross Revenue
+              </span>
+              <span className={`text-sm font-black tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                {symbol}
+                {stats.totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+            </div>
+
+            <div
+              className={`px-3 py-2 rounded-xl border ${
+                isLight ? 'bg-white border-zinc-200' : 'bg-white/5 border-white/10'
+              }`}
+            >
+              <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">
+                Inventory Cost
+              </span>
+              <span className={`text-sm font-black tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+                {symbol}
+                {stats.totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+            </div>
+
+            <div
+              className={`col-span-2 sm:col-span-1 px-3 py-2 rounded-xl border ${
+                isLight ? 'bg-white border-zinc-200' : 'bg-white/5 border-white/10'
+              }`}
+            >
+              <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">
+                Avg Profit/Unit
+              </span>
+              <span className={`text-sm font-black tracking-tight text-[#ff6b00]`}>
+                {symbol}
+                {stats.avgProfitPerUnit.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <div
+            className={`p-1 rounded-xl border flex items-center gap-1 ${
+              isLight ? 'bg-zinc-100 border-zinc-200' : 'bg-white/5 border-white/10'
+            }`}
+          >
+            {(['7D', '30D', 'QTD', 'ALL'] as TimeRange[]).map((rangeKey) => {
+              const active = timeRange === rangeKey;
+              return (
+                <button
+                  key={rangeKey}
+                  onClick={() => setTimeRange(rangeKey)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    active
+                      ? 'bg-gradient-to-r from-[#ff4500] to-[#ffa500] text-white shadow-md shadow-orange-500/30'
+                      : isLight
+                      ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white'
+                      : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {rangeKey}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <div className={`p-3.5 rounded-2xl border ${
-          isLight ? 'bg-orange-50/50 border-orange-200/60' : 'bg-orange-500/5 border-orange-500/15'
-        }`}>
-          <div className="flex items-center justify-between text-xs font-medium">
-            <span className={isLight ? 'text-zinc-600' : 'text-zinc-400'}>Net Profit Potential</span>
-            <span className="flex items-center text-emerald-600 font-bold text-[11px] gap-0.5">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>Healthy</span>
-            </span>
-          </div>
-          <div className="text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b00] to-[#ffa500] mt-1 font-mono">
-            {symbol}{stats.netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div className={`text-[10px] mt-0.5 ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-            Gross potential across {stats.totalUnits} on-hand units
-          </div>
-        </div>
-
-        <div className={`p-3.5 rounded-2xl border ${
-          isLight ? 'bg-[#f6f6f8] border-zinc-200' : 'bg-[#181822] border-white/5'
-        }`}>
-          <div className="flex items-center justify-between text-xs font-medium">
-            <span className={isLight ? 'text-zinc-600' : 'text-zinc-400'}>Gross Margin</span>
-            <Percent className="w-3.5 h-3.5 text-orange-500" />
-          </div>
-          <div className={`text-xl sm:text-2xl font-black mt-1 font-mono ${
-            isLight ? 'text-zinc-900' : 'text-white'
-          }`}>
-            {stats.marginPct.toFixed(1)}%
-          </div>
-          <div className={`text-[10px] mt-0.5 ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-            Total Revenue: {symbol}{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-
-        <div className={`p-3.5 rounded-2xl border ${
-          isLight ? 'bg-[#f6f6f8] border-zinc-200' : 'bg-[#181822] border-white/5'
-        }`}>
-          <div className="flex items-center justify-between text-xs font-medium">
-            <span className={isLight ? 'text-zinc-600' : 'text-zinc-400'}>Avg Profit Per Unit</span>
-            <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-          </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
-            {symbol}{stats.avgProfitPerUnit.toFixed(2)}
-          </div>
-          <div className={`text-[10px] mt-0.5 ${isLight ? 'text-zinc-500' : 'text-zinc-400'}`}>
-            Cost Basis: {symbol}{stats.totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-        </div>
-      </div>
-
-      <div className="relative w-full overflow-hidden">
+      <div className="relative pt-6">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-48 sm:h-56 overflow-visible select-none"
+          className="w-full h-44 sm:h-56 overflow-visible select-none"
         >
           <defs>
-            <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ff6b00" stopOpacity={isLight ? '0.35' : '0.45'} />
-              <stop offset="100%" stopColor="#ff6b00" stopOpacity="0.0" />
+            <linearGradient id="profitLinearFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ff6b00" stopOpacity="0.45" />
+              <stop offset="45%" stopColor="#ffa500" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#ff4500" stopOpacity="0.0" />
             </linearGradient>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#ff6b00" floodOpacity="0.35" />
+
+            <linearGradient id="profitStrokeGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#ff4500" />
+              <stop offset="50%" stopColor="#ff6b00" />
+              <stop offset="100%" stopColor="#ffa500" />
+            </linearGradient>
+
+            <filter id="profitGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
 
-          {[0.25, 0.5, 0.75].map((ratio) => {
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
             const y = paddingY + ratio * (height - paddingY * 2);
             return (
               <line
-                key={ratio}
+                key={i}
                 x1={paddingX}
                 y1={y}
                 x2={width - paddingX}
                 y2={y}
-                stroke={isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)'}
+                stroke={isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)'}
                 strokeDasharray="4 4"
+                strokeWidth="1"
               />
             );
           })}
@@ -295,10 +446,10 @@ export const LinearProfitGraph: React.FC<LinearProfitGraphProps> = ({ products }
           {areaD && (
             <motion.path
               d={areaD}
-              fill="url(#profitGrad)"
+              fill="url(#profitLinearFill)"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.8 }}
             />
           )}
 
@@ -306,88 +457,110 @@ export const LinearProfitGraph: React.FC<LinearProfitGraphProps> = ({ products }
             <motion.path
               d={pathD}
               fill="none"
-              stroke="#ff6b00"
+              stroke="url(#profitStrokeGrad)"
               strokeWidth="3.5"
               strokeLinecap="round"
-              filter="url(#glow)"
+              filter="url(#profitGlow)"
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
+              transition={{ duration: 1.1, ease: 'easeInOut' }}
             />
           )}
 
           {coords.map((c, i) => {
-            const isHovered = hoveredPoint?.label === c.point.label;
+            const isHovered = hoveredPoint === c.point;
             return (
-              <g key={i}>
+              <g key={i} className="cursor-pointer">
                 <circle
                   cx={c.x}
                   cy={c.y}
-                  r={isHovered ? 7 : 4}
-                  fill={isHovered ? '#ffa500' : '#ff6b00'}
-                  stroke={isLight ? '#ffffff' : '#09090b'}
-                  strokeWidth={isHovered ? 3 : 2}
-                  className="cursor-pointer transition-all duration-200"
-                  onMouseEnter={() => {
+                  r={isHovered ? 8 : 4.5}
+                  fill={isHovered ? '#ffffff' : '#ff6b00'}
+                  stroke="#ffa500"
+                  strokeWidth={isHovered ? 3.5 : 2}
+                  className="transition-all duration-200"
+                />
+                <circle
+                  cx={c.x}
+                  cy={c.y}
+                  r={22}
+                  fill="transparent"
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.ownerSVGElement?.getBoundingClientRect();
+                    if (rect) {
+                      setHoverPos({
+                        x: (c.x / width) * rect.width,
+                        y: (c.y / height) * rect.height,
+                      });
+                    }
                     setHoveredPoint(c.point);
-                    setHoverPos({ x: c.x, y: c.y });
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredPoint(null);
+                    setHoverPos(null);
                   }}
                 />
-                <text
-                  x={c.x}
-                  y={height - 8}
-                  textAnchor="middle"
-                  fontSize="11"
-                  fill={isLight ? '#71717a' : '#a1a1aa'}
-                  fontWeight={isHovered ? 'bold' : 'normal'}
-                >
-                  {c.point.label}
-                </text>
               </g>
             );
           })}
+
+          {coords.map((c, i) => (
+            <text
+              key={i}
+              x={c.x}
+              y={height - 8}
+              textAnchor="middle"
+              className={`text-[11px] font-bold fill-current ${
+                isLight ? 'text-zinc-500' : 'text-zinc-400'
+              }`}
+            >
+              {c.point.label}
+            </text>
+          ))}
         </svg>
 
         <AnimatePresence>
           {hoveredPoint && hoverPos && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 5 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 5 }}
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.95 }}
               transition={{ duration: 0.15 }}
               style={{
-                position: 'absolute',
-                left: `${(hoverPos.x / width) * 100}%`,
-                top: `${(hoverPos.y / height) * 100}%`,
-                transform: 'translate(-50%, -120%)',
+                left: Math.max(12, Math.min(hoverPos.x - 80, 600)),
+                top: Math.max(0, hoverPos.y - 100),
               }}
-              className={`p-3 rounded-2xl border shadow-xl z-30 pointer-events-none min-w-[160px] ${
+              className={`absolute z-30 pointer-events-none px-3.5 py-2.5 rounded-xl border shadow-xl backdrop-blur-xl ${
                 isLight
-                  ? 'bg-white border-zinc-200 text-zinc-900 shadow-orange-500/10'
-                  : 'bg-[#181822] border-white/10 text-white shadow-black/80'
+                  ? 'bg-white/95 border-orange-300 text-zinc-900 shadow-orange-500/15'
+                  : 'bg-[#12121a]/95 border-orange-500/30 text-white shadow-black/60'
               }`}
             >
-              <div className="text-[10px] uppercase font-bold text-orange-500 tracking-wider mb-1 flex items-center justify-between">
-                <span>{hoveredPoint.label} Telemetry</span>
-                <ShieldCheck className="w-3 h-3" />
+              <div className="flex items-center justify-between gap-3 text-[10px] text-zinc-400 border-b border-white/10 pb-1 mb-1.5 font-bold uppercase tracking-wider">
+                <span>{hoveredPoint.dateStr}</span>
+                <span className="text-[#ff6b00]">{hoveredPoint.margin.toFixed(1)}% Margin</span>
               </div>
-              <div className="flex items-center justify-between text-xs gap-3">
-                <span className={isLight ? 'text-zinc-500' : 'text-zinc-400'}>Net Profit:</span>
-                <span className="font-mono font-bold text-[#ff6b00]">
-                  +{symbol}{hoveredPoint.profit.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] gap-3 mt-0.5">
-                <span className={isLight ? 'text-zinc-500' : 'text-zinc-400'}>Revenue:</span>
-                <span className="font-mono font-semibold">
-                  {symbol}{hoveredPoint.revenue.toFixed(2)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[11px] gap-3 mt-0.5">
-                <span className={isLight ? 'text-zinc-500' : 'text-zinc-400'}>Margin:</span>
-                <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                  {hoveredPoint.margin.toFixed(1)}%
-                </span>
+              <div className="space-y-0.5 text-xs">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-zinc-400 font-medium">Net Profit:</span>
+                  <span className="font-black text-emerald-500">
+                    {symbol}
+                    {hoveredPoint.profit.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-zinc-400 font-medium">Revenue:</span>
+                  <span className="font-semibold text-zinc-300">
+                    {symbol}
+                    {hoveredPoint.revenue.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
               </div>
             </motion.div>
           )}

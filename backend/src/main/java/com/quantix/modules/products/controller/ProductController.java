@@ -77,6 +77,17 @@ public class ProductController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Product deleted successfully"));
     }
 
+    @GetMapping("/movements")
+    public ResponseEntity<ApiResponse<List<StockMovementResponse>>> getAllMovements(
+            @RequestParam(required = false) String productId
+    ) {
+        String tenantId = requireTenantId();
+        List<StockMovementResponse> movements = productId != null && !productId.isBlank()
+                ? productService.getStockMovements(tenantId, productId)
+                : productService.getAllStockMovements(tenantId);
+        return ResponseEntity.ok(ApiResponse.ok(movements, "Stock movements retrieved successfully"));
+    }
+
     @PostMapping("/{id}/adjust-stock")
     public ResponseEntity<ApiResponse<StockMovementResponse>> adjustStock(
             @PathVariable String id,

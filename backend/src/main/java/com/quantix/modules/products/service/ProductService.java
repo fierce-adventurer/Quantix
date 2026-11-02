@@ -70,6 +70,19 @@ public class ProductService {
         );
 
         product = productRepository.save(product);
+
+        int initialQty = product.getQuantityOnHand() != null ? product.getQuantityOnHand() : 0;
+        StockMovement movement = StockMovement.builder()
+                .tenantId(tenantId)
+                .productId(product.getId())
+                .previousQuantity(0)
+                .quantityDelta(initialQty)
+                .resultingQuantity(initialQty)
+                .reason("Initial inventory setup")
+                .adjustedBy("Owner")
+                .build();
+        stockMovementRepository.save(movement);
+
         return toResponse(product);
     }
 
@@ -135,6 +148,14 @@ public class ProductService {
 
         movement = stockMovementRepository.save(movement);
         return StockMovementResponse.from(movement);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockMovementResponse> getAllStockMovements(String tenantId) {
+        return stockMovementRepository.findByTenantIdOrderByCreatedAtDesc(tenantId)
+                .stream()
+                .map(StockMovementResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)

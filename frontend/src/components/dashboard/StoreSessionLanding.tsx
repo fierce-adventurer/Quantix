@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
-import { Store, User, Shield, LogOut, CheckCircle2, Activity, Database, Layers } from 'lucide-react';
+import { Store, User, Shield, LogOut, CheckCircle2, Activity, Database } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { GlowButton } from '../ui/GlowButton';
 import { PillBadge } from '../ui/PillBadge';
+import { QuantixLogo } from '../ui/QuantixLogo';
 import { api } from '../../lib/api';
 
 interface HealthData {
@@ -71,20 +72,11 @@ export const StoreSessionLanding: React.FC = () => {
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b00] to-[#ffa500] p-0.5 shadow-glow-sm flex items-center justify-center">
-              <div className="w-full h-full bg-[#09090b] rounded-[10px] flex items-center justify-center">
-                <Layers className="w-5 h-5 text-[#ff7300]" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-white tracking-tight">Quantix</span>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Tenant
-                </span>
-              </div>
-            </div>
+            <QuantixLogo size="sm" withText />
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live Tenant
+            </span>
           </div>
 
           <div className="flex items-center gap-4">

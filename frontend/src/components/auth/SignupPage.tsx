@@ -6,6 +6,7 @@ import { requestLocationPermissionAndDetectCurrency } from '../../types/product'
 import { GlowButton } from '../ui/GlowButton';
 import { GlassInput } from '../ui/GlassInput';
 import { PillBadge } from '../ui/PillBadge';
+import { QuantixLogo } from '../ui/QuantixLogo';
 
 interface SignupPageProps {
   onGoToLogin: () => void;
@@ -86,7 +87,8 @@ export const SignupPage: React.FC<SignupPageProps> = ({ onGoToLogin }) => {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 w-full"
       >
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 flex flex-col items-center">
+          <QuantixLogo size="lg" animated className="mb-4" />
           <PillBadge tag="LIGHTNING-FAST" text="Zero Friction • Real-Time Inventory Velocity" className="mb-3" />
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
             Launch Your Store with <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b00] to-[#ffa500]">Quantix</span>

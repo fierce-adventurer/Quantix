@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, User, LogOut, Sun, Moon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, LogOut, Sun, Moon } from 'lucide-react';
 import { useAuth } from './context/auth-context';
 import { useTheme } from './context/theme-context';
 import { AuthHeader } from './components/auth/AuthHeader';
@@ -8,10 +9,12 @@ import { SignupPage } from './components/auth/SignupPage';
 import { Sidebar, NavigationTab } from './components/layout/Sidebar';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { ProductCatalogView } from './components/products/ProductCatalogView';
+import { ProductHistoryView } from './components/products/ProductHistoryView';
 import { SettingsView } from './components/settings/SettingsView';
 import { ProductModal } from './components/products/ProductModal';
 import { DeleteProductDialog } from './components/products/DeleteProductDialog';
 import { ProductDetailFloatingWindow } from './components/products/ProductDetailFloatingWindow';
+import { QuantixLogo } from './components/ui/QuantixLogo';
 import { Product, CreateProductInput } from './types/product';
 import { api } from './lib/api';
 
@@ -135,16 +138,7 @@ export const App: React.FC = () => {
         }`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b00] to-[#ffa500] p-0.5 shadow-glow-sm flex items-center justify-center">
-                <div className={`w-full h-full rounded-[10px] flex items-center justify-center ${isLight ? 'bg-white' : 'bg-[#09090b]'}`}>
-                  <Layers className="w-5 h-5 text-[#ff7300]" />
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-base font-black tracking-tight ${isLight ? 'text-zinc-900' : 'text-white'}`}>
-                  Quantix
-                </span>
-              </div>
+              <QuantixLogo size="sm" withText />
             </div>
 
             <div className="flex items-center gap-3">
@@ -197,46 +191,94 @@ export const App: React.FC = () => {
             <div className="sunburst-crest" />
 
             <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:pl-28 pb-28 lg:pb-12">
-              {activeTab === 'dashboard' && (
-                <DashboardView
-                  products={products}
-                  isLoading={isLoadingProducts}
-                  onRefresh={fetchProducts}
-                  onAddProduct={() => {
-                    setEditingProduct(null);
-                    setIsModalOpen(true);
-                  }}
-                  onViewProductDetail={(product) => {
-                    setSelectedProduct(product);
-                    setIsDetailOpen(true);
-                  }}
-                  onNavigateToProducts={() => setActiveTab('products')}
-                />
-              )}
+              <AnimatePresence mode="wait">
+                {activeTab === 'dashboard' && (
+                  <motion.div
+                    key="dashboard"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <DashboardView
+                      products={products}
+                      isLoading={isLoadingProducts}
+                      onRefresh={fetchProducts}
+                      onAddProduct={() => {
+                        setEditingProduct(null);
+                        setIsModalOpen(true);
+                      }}
+                      onViewProductDetail={(product) => {
+                        setSelectedProduct(product);
+                        setIsDetailOpen(true);
+                      }}
+                      onNavigateToProducts={() => setActiveTab('products')}
+                    />
+                  </motion.div>
+                )}
 
-              {activeTab === 'products' && (
-                <ProductCatalogView
-                  products={products}
-                  isLoading={isLoadingProducts}
-                  onRefresh={fetchProducts}
-                  onOpenCreate={() => {
-                    setEditingProduct(null);
-                    setIsModalOpen(true);
-                  }}
-                  onSelectProduct={(product) => {
-                    setSelectedProduct(product);
-                    setIsDetailOpen(true);
-                  }}
-                />
-              )}
+                {activeTab === 'products' && (
+                  <motion.div
+                    key="products"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <ProductCatalogView
+                      products={products}
+                      isLoading={isLoadingProducts}
+                      onRefresh={fetchProducts}
+                      onOpenCreate={() => {
+                        setEditingProduct(null);
+                        setIsModalOpen(true);
+                      }}
+                      onSelectProduct={(product) => {
+                        setSelectedProduct(product);
+                        setIsDetailOpen(true);
+                      }}
+                    />
+                  </motion.div>
+                )}
 
-              {activeTab === 'settings' && (
-                <SettingsView
-                  onSettingsUpdated={() => {
-                    fetchProducts();
-                  }}
-                />
-              )}
+                {activeTab === 'history' && (
+                  <motion.div
+                    key="history"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <ProductHistoryView
+                      products={products}
+                      onOpenProductDetail={(product) => {
+                        setSelectedProduct(product);
+                        setIsDetailOpen(true);
+                      }}
+                      onOpenAdjustStock={(product) => {
+                        setSelectedProduct(product);
+                        setIsDetailOpen(true);
+                      }}
+                    />
+                  </motion.div>
+                )}
+
+                {activeTab === 'settings' && (
+                  <motion.div
+                    key="settings"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <SettingsView
+                      onSettingsUpdated={() => {
+                        fetchProducts();
+                      }}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </main>
           </div>
         </div>

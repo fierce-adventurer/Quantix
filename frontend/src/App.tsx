@@ -11,7 +11,7 @@ export const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-screen overflow-hidden bg-[#09090b] flex flex-col items-center justify-center relative">
+      <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center relative ambient-grid overflow-hidden">
         <div className="glow-horizon" />
         <div className="sunburst-crest" />
         <div className="relative z-10 flex flex-col items-center gap-4">
@@ -32,12 +32,12 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-[#09090b] text-[#f4f4f5] flex flex-col relative selection:bg-[#ff6b00]/30 selection:text-white">
+    <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] flex flex-col relative ambient-grid overflow-y-auto selection:bg-[#ff6b00]/30 selection:text-white">
       <AuthHeader
         isLogin={authMode === 'login'}
         onSwitchMode={() => setAuthMode((prev) => (prev === 'login' ? 'signup' : 'login'))}
       />
-      <main className="flex-1 min-h-0 flex flex-col justify-center overflow-y-auto sm:overflow-hidden">
+      <main className="flex-1 flex flex-col justify-center items-center px-4 py-6 sm:py-10 relative z-10">
         {authMode === 'login' ? (
           <LoginPage onGoToSignup={() => setAuthMode('signup')} />
         ) : (

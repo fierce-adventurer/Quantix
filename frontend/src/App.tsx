@@ -21,7 +21,7 @@ export const App: React.FC = () => {
   const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const username = user?.email ? user.email.split('@')[0] : 'Owner';
+  const username = user?.email ? user.email.split('@')[0] : 'User';
 
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
 
@@ -135,9 +135,6 @@ export const App: React.FC = () => {
                 >
                   <User className="w-3.5 h-3.5 text-orange-400" />
                   <span className="font-semibold capitalize">{username}</span>
-                  <span className="text-[10px] uppercase font-bold text-orange-400 px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
-                    {user.role}
-                  </span>
                 </button>
               )}
             </div>
